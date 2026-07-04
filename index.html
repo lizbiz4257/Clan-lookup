@@ -79,19 +79,28 @@
 
     <div class="card">
       <input id="clanTagInput" type="text" placeholder="#XXXXXXX">
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); margin-bottom:10px;">
+        <input type="checkbox" id="includeCardsCheck" style="width:auto; margin:0;"> Include card levels (slower)
+      </label>
       <button onclick="lookupClan()">Look up this clan</button>
       <button class="secondary" onclick="lookupFamily()">Search all family clans</button>
       <div id="status"></div>
+    </div>
+
+    <div class="card">
+      <input id="playerInput" type="text" placeholder="Player name or #tag">
+      <button onclick="lookupPlayer()">Look up player</button>
     </div>
 
     <div id="results"></div>
   </div>
 
   <script>
-    // Your 7 family clan tags
+    // Your 9 family clan tags
     const FAMILY_TAGS = [
       '#YQJPR2V9', '#L0PQ2ULQ', '#YRVC9QVJ', '#G9LRRP82',
-      '#GURCRRY9', '#QJU8P80C', '#GY0QQGYY'
+      '#GURCRRY9', '#QJU8P80C', '#GY0QQGYY',
+      '#QVY92JLV', '#GQ20UQR8'
     ];
 
     let lastData = null;
@@ -106,7 +115,13 @@
       await runLookup(FAMILY_TAGS);
     }
 
-    async function runLookup(tags) {
+    async function lookupPlayer() {
+      const query = document.getElementById('playerInput').value.trim();
+      if (!query) return;
+      await runPlayerLookup(query);
+    }
+
+    async function runPlayerLookup(query) {
       const statusEl = document.getElementById('status');
       const resultsEl = document.getElementById('results');
       const allButtons = document.querySelectorAll('button');
@@ -116,7 +131,49 @@
       statusEl.innerHTML = '<span class="spinner"></span>Looking up…';
 
       try {
-        const resp = await fetch('/api/lookup?tags=' + encodeURIComponent(tags.join(',')));
+        const resp = await fetch('/api/lookup?player=' + encodeURIComponent(query));
+        const data = await resp.json();
+        allButtons.forEach(b => b.disabled = false);
+
+        if (!resp.ok || data.error) {
+          statusEl.className = 'err';
+          statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
+          return;
+        }
+        if (data.notFound) {
+          statusEl.className = 'err';
+          statusEl.textContent = 'No player found with that tag.';
+          return;
+        }
+        if (data.rows.length === 0) {
+          statusEl.className = 'err';
+          statusEl.textContent = 'No matches found in your family clans for "' + query + '".';
+          return;
+        }
+
+        lastData = data;
+        statusEl.className = 'ok';
+        statusEl.textContent = data.rows.length + ' match' + (data.rows.length > 1 ? 'es' : '') + ' found';
+        renderTable(data);
+      } catch (err) {
+        allButtons.forEach(b => b.disabled = false);
+        statusEl.className = 'err';
+        statusEl.textContent = 'Error: ' + err.message;
+      }
+    }
+
+    async function runLookup(tags) {
+      const statusEl = document.getElementById('status');
+      const resultsEl = document.getElementById('results');
+      const allButtons = document.querySelectorAll('button');
+      allButtons.forEach(b => b.disabled = true);
+      resultsEl.innerHTML = '';
+      statusEl.className = 'busy';
+      const includeCards = document.getElementById('includeCardsCheck').checked;
+      statusEl.innerHTML = '<span class="spinner"></span>' + (includeCards ? 'Looking up (fetching card levels, this takes longer)…' : 'Looking up…');
+
+      try {
+        const resp = await fetch('/api/lookup?tags=' + encodeURIComponent(tags.join(',')) + (includeCards ? '&cards=1' : ''));
         const data = await resp.json();
         allButtons.forEach(b => b.disabled = false);
 
@@ -145,6 +202,7 @@
     function renderTable(data) {
       const resultsEl = document.getElementById('results');
       const multiClan = data.clans.length > 1;
+      const hasCards = data.rows.some(r => r.avgCardLevel !== undefined);
 
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
       html += '<tr><th>Name</th>' + (multiClan ? '<th>Clan</th>' : '') +
@@ -153,7 +211,9 @@
         '<th>Wk2 Atk</th><th>Wk2 Score</th>' +
         '<th>Wk3 Atk</th><th>Wk3 Score</th>' +
         '<th>Wk4 Atk</th><th>Wk4 Score</th>' +
-        '<th>5wk Avg Atk</th><th>5wk Avg Score</th></tr>';
+        '<th>5wk Avg Atk</th><th>5wk Avg Score</th>' +
+        (hasCards ? '<th>Avg Card Lvl</th><th>Maxed Cards</th>' : '') +
+        '</tr>';
 
       data.rows.forEach((r) => {
         const w = r.weeks || [];
@@ -168,18 +228,51 @@
                   '<td>' + (wk ? wk.score : '–') + '</td>';
         }
         html += '<td>' + (r.fiveWeekAvgAttacks == null ? '–' : r.fiveWeekAvgAttacks) + '</td>' +
-          '<td>' + (r.fiveWeekAvgScore == null ? '–' : r.fiveWeekAvgScore) + '</td>' +
-          '</tr>';
+          '<td>' + (r.fiveWeekAvgScore == null ? '–' : r.fiveWeekAvgScore) + '</td>';
+        if (hasCards) {
+          html += '<td>' + (r.avgCardLevel == null ? '–' : r.avgCardLevel) + '</td>' +
+                  '<td>' + (r.maxedCards == null ? '–' : r.maxedCards + '/' + r.cardCount) + '</td>';
+        }
+        html += '</tr>';
       });
       html += '</table></div>';
       html += '<button style="margin-top:12px;" onclick="downloadExcel()">Download to Excel</button>';
       html += '</div>';
       resultsEl.innerHTML = html;
+
+      // Full card collection breakdown, only for single-player lookups
+      if (data.rows.length === 1 && data.rows[0].cards) {
+        renderCardCollection(data.rows[0]);
+      }
+    }
+
+    function renderCardCollection(row) {
+      const resultsEl = document.getElementById('results');
+      const cards = (row.cards || []).slice().sort((a, b) => {
+        const pctA = a.maxLevel ? a.level / a.maxLevel : 0;
+        const pctB = b.maxLevel ? b.level / b.maxLevel : 0;
+        return pctB - pctA;
+      });
+
+      let html = '<div class="card"><h2 style="font-size:14px; margin:0 0 10px;">' + row.name + ' — Card Collection (' + cards.length + ' cards)</h2>';
+      html += '<div style="overflow-x:auto;"><table>';
+      html += '<tr><th>Card</th><th>Level</th><th>Max Level</th></tr>';
+      cards.forEach((c) => {
+        const maxed = c.maxLevel && c.level >= c.maxLevel;
+        html += '<tr' + (maxed ? ' style="color:#15803d; font-weight:600;"' : '') + '>' +
+          '<td>' + c.name + '</td>' +
+          '<td>' + c.level + '</td>' +
+          '<td>' + c.maxLevel + '</td>' +
+          '</tr>';
+      });
+      html += '</table></div></div>';
+      resultsEl.innerHTML += html;
     }
 
     function downloadExcel() {
       if (!lastData) return;
       const multiClan = lastData.clans.length > 1;
+      const hasCards = lastData.rows.some(r => r.avgCardLevel !== undefined);
 
       const headers = ['Name'];
       if (multiClan) headers.push('Clan');
@@ -191,6 +284,7 @@
         'Week 4 Attacks', 'Week 4 Score',
         '5-Week Avg Attacks', '5-Week Avg Score'
       );
+      if (hasCards) headers.push('Avg Card Level', 'Maxed Cards', 'Total Cards');
 
       const data = lastData.rows.map((r) => {
         const w = r.weeks || [];
@@ -204,6 +298,7 @@
           w[3] ? w[3].attacks : null, w[3] ? w[3].score : null,
           r.fiveWeekAvgAttacks, r.fiveWeekAvgScore
         );
+        if (hasCards) row.push(r.avgCardLevel, r.maxedCards, r.cardCount);
         return row;
       });
 
@@ -217,6 +312,11 @@
     document.getElementById('clanTagInput').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') lookupClan();
     });
+    document.getElementById('playerInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') lookupPlayer();
+    });
   </script>
 </body>
 </html>
+index.html
+Displaying index.html.
