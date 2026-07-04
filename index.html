@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Clan Lookup</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root {
       --accent: #2563eb;
@@ -22,7 +23,7 @@
       margin: 0;
       padding: 24px 16px 60px;
     }
-    .wrap { max-width: 480px; margin: 0 auto; }
+    .wrap { max-width: 720px; margin: 0 auto; }
     h1 { font-size: 20px; margin: 0 0 4px; }
     .sub { color: var(--muted); font-size: 13px; margin: 0 0 24px; }
     .card {
@@ -37,7 +38,6 @@
       border-radius: 8px; font-size: 15px; margin-bottom: 10px;
     }
     button {
-      width: 100%;
       background: var(--accent);
       color: #fff;
       border: none;
@@ -46,16 +46,23 @@
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
+      width: 100%;
+      margin-bottom: 8px;
     }
-    button:active { background: var(--accent-dark); }
-    button:disabled { background: #b9c2d0; cursor: not-allowed; }
+    button.secondary {
+      background: #fff;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    button:active { opacity: 0.85; }
+    button:disabled { background: #b9c2d0; color: #fff; cursor: not-allowed; border: none; }
     #status { font-size: 13px; margin-top: 8px; min-height: 16px; }
     #status.ok { color: #15803d; }
     #status.err { color: #b91c1c; }
     #status.busy { color: var(--muted); }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th { text-align: left; padding: 6px 4px; color: var(--muted); }
-    td { padding: 6px 4px; border-top: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+    th { text-align: left; padding: 6px 4px; color: var(--muted); white-space: nowrap; }
+    td { padding: 6px 4px; border-top: 1px solid var(--border); white-space: nowrap; }
     .spinner {
       display: inline-block; width: 12px; height: 12px;
       border: 2px solid #cbd5e1; border-top-color: var(--accent);
@@ -68,11 +75,12 @@
 <body>
   <div class="wrap">
     <h1>Clan Lookup</h1>
-    <p class="sub">Enter any clan tag to see this week's attacks/score, 5-week averages, and who's currently in clan.</p>
+    <p class="sub">Search one clan by tag, or pull everyone across all your family clans at once.</p>
 
     <div class="card">
       <input id="clanTagInput" type="text" placeholder="#XXXXXXX">
-      <button onclick="lookupClan()">Look up clan</button>
+      <button onclick="lookupClan()">Look up this clan</button>
+      <button class="secondary" onclick="lookupFamily()">Search all family clans</button>
       <div id="status"></div>
     </div>
 
@@ -80,17 +88,37 @@
   </div>
 
   <script>
+    // Your 7 family clan tags
+    const FAMILY_TAGS = [
+      '#YQJPR2V9', '#L0PQ2ULQ', '#YRVC9QVJ', '#G9LRRP82',
+      '#GURCRRY9', '#QJU8P80C', '#GY0QQGYY'
+    ];
+
+    let lastData = null;
+
     async function lookupClan() {
       const tag = document.getElementById('clanTagInput').value.trim();
+      if (!tag) return;
+      await runLookup([tag]);
+    }
+
+    async function lookupFamily() {
+      await runLookup(FAMILY_TAGS);
+    }
+
+    async function runLookup(tags) {
       const statusEl = document.getElementById('status');
       const resultsEl = document.getElementById('results');
+      const allButtons = document.querySelectorAll('button');
+      allButtons.forEach(b => b.disabled = true);
       resultsEl.innerHTML = '';
       statusEl.className = 'busy';
       statusEl.innerHTML = '<span class="spinner"></span>Looking up…';
 
       try {
-        const resp = await fetch('/api/lookup?tag=' + encodeURIComponent(tag));
+        const resp = await fetch('/api/lookup?tags=' + encodeURIComponent(tags.join(',')));
         const data = await resp.json();
+        allButtons.forEach(b => b.disabled = false);
 
         if (!resp.ok || data.error) {
           statusEl.className = 'err';
@@ -98,11 +126,17 @@
           return;
         }
 
+        lastData = data;
+        let statusText = data.clans.map(c => c.clanName + ' (' + c.memberCount + ')').join(', ') +
+          ' — ' + data.totalMembers + ' total members';
+        if (data.failedClans && data.failedClans.length) {
+          statusText += '. Failed: ' + data.failedClans.map(f => f.clanTag).join(', ');
+        }
         statusEl.className = 'ok';
-        statusEl.textContent = data.clanName + ' — ' + data.memberCount + ' members' +
-          (data.thisWeekAvailable ? '' : ' (no war currently running — showing 5-week history only)');
+        statusEl.textContent = statusText;
         renderTable(data);
       } catch (err) {
+        allButtons.forEach(b => b.disabled = false);
         statusEl.className = 'err';
         statusEl.textContent = 'Error: ' + err.message;
       }
@@ -110,18 +144,22 @@
 
     function renderTable(data) {
       const resultsEl = document.getElementById('results');
+      const multiClan = data.clans.length > 1;
+
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
-      html += '<tr><th>Name</th>' +
+      html += '<tr><th>Name</th>' + (multiClan ? '<th>Clan</th>' : '') +
         '<th>Live Atk</th><th>Live Score</th>' +
         '<th>Wk1 Atk</th><th>Wk1 Score</th>' +
         '<th>Wk2 Atk</th><th>Wk2 Score</th>' +
         '<th>Wk3 Atk</th><th>Wk3 Score</th>' +
         '<th>Wk4 Atk</th><th>Wk4 Score</th>' +
         '<th>5wk Avg Atk</th><th>5wk Avg Score</th></tr>';
+
       data.rows.forEach((r) => {
         const w = r.weeks || [];
         html += '<tr>' +
           '<td>' + r.name + '</td>' +
+          (multiClan ? '<td>' + r.clanName + '</td>' : '') +
           '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>' +
           '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>';
         for (let i = 0; i < 4; i++) {
@@ -133,8 +171,47 @@
           '<td>' + (r.fiveWeekAvgScore == null ? '–' : r.fiveWeekAvgScore) + '</td>' +
           '</tr>';
       });
-      html += '</table></div></div>';
+      html += '</table></div>';
+      html += '<button style="margin-top:12px;" onclick="downloadExcel()">Download to Excel</button>';
+      html += '</div>';
       resultsEl.innerHTML = html;
+    }
+
+    function downloadExcel() {
+      if (!lastData) return;
+      const multiClan = lastData.clans.length > 1;
+
+      const headers = ['Name'];
+      if (multiClan) headers.push('Clan');
+      headers.push(
+        'Live Attacks', 'Live Score',
+        'Week 1 Attacks', 'Week 1 Score',
+        'Week 2 Attacks', 'Week 2 Score',
+        'Week 3 Attacks', 'Week 3 Score',
+        'Week 4 Attacks', 'Week 4 Score',
+        '5-Week Avg Attacks', '5-Week Avg Score'
+      );
+
+      const data = lastData.rows.map((r) => {
+        const w = r.weeks || [];
+        const row = [r.name];
+        if (multiClan) row.push(r.clanName);
+        row.push(
+          r.thisWeekAttacks, r.thisWeekScore,
+          w[0] ? w[0].attacks : null, w[0] ? w[0].score : null,
+          w[1] ? w[1].attacks : null, w[1] ? w[1].score : null,
+          w[2] ? w[2].attacks : null, w[2] ? w[2].score : null,
+          w[3] ? w[3].attacks : null, w[3] ? w[3].score : null,
+          r.fiveWeekAvgAttacks, r.fiveWeekAvgScore
+        );
+        return row;
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Clan Data');
+      const filename = multiClan ? 'clan-family-lookup.xlsx' : (lastData.clans[0].clanName.replace(/[^a-z0-9]/gi, '_') + '.xlsx');
+      XLSX.writeFile(wb, filename);
     }
 
     document.getElementById('clanTagInput').addEventListener('keydown', function (e) {
