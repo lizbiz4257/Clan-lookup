@@ -60,4 +60,43 @@ module.exports = async function handler(req, res) {
     });
 
     const currentMemberTags = {};
-    (clanInfo.memberList || []).forEach((m) => { current
+    (clanInfo.memberList || []).forEach((m) => { currentMemberTags[m.tag] = m.name; });
+
+    const allTags = new Set([...Object.keys(currentMemberTags), ...Object.keys(history)]);
+
+    const rows = [];
+    allTags.forEach((playerTag) => {
+      const h = history[playerTag] || { scores: [], attacks: [] };
+      const racesCounted = h.scores.length;
+      const totalScore = h.scores.reduce((a, b) => a + b, 0);
+      const totalAttacks = h.attacks.reduce((a, b) => a + b, 0);
+      const cur = currentParticipants[playerTag];
+
+      rows.push({
+        tag: playerTag,
+        name: currentMemberTags[playerTag] || h.name || (cur && cur.name) || '(unknown)',
+        inClan: currentMemberTags.hasOwnProperty(playerTag) ? 'Yes' : 'No',
+        thisWeekAttacks: cur ? cur.attacks : null,
+        thisWeekScore: cur ? cur.score : null,
+        fiveWeekAvgAttacks: racesCounted ? Math.round((totalAttacks / racesCounted) * 100) / 100 : null,
+        fiveWeekAvgScore: racesCounted ? Math.round((totalScore / racesCounted) * 100) / 100 : null,
+        racesCounted
+      });
+    });
+
+    rows.sort((a, b) => {
+      if (a.inClan !== b.inClan) return a.inClan === 'Yes' ? -1 : 1;
+      return (b.fiveWeekAvgScore || 0) - (a.fiveWeekAvgScore || 0);
+    });
+
+    res.status(200).json({
+      clanTag: tag,
+      clanName: clanInfo.name,
+      memberCount: (clanInfo.memberList || []).length,
+      thisWeekAvailable,
+      rows
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
