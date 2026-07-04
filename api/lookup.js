@@ -1,116 +1,134 @@
 // api/lookup.js
-// Serverless function (runs on Vercel). Keeps the Royale API token on the
-// server side — the browser never sees it. Set ROYALE_API_TOKEN as an
-// Environment Variable in your Vercel project settings (not in this file).
-//
 // Usage:
-//   /api/lookup?tag=XXXXXXXX            -> single clan
-//   /api/lookup?tags=TAG1,TAG2,TAG3     -> multiple clans combined into one list
+//   /api/lookup?tag=XXXXXXXX          -> single clan
+//   /api/lookup?tags=TAG1,TAG2,...    -> multiple clans combined
+//   /api/lookup?player=NAME_OR_TAG    -> single player (war stats + card collection)
 
-const API_BASE = 'https://proxy.royaleapi.dev/v1';
-
-async function royaleApiGet(endpoint) {
-  const resp = await fetch(API_BASE + endpoint, {
-    headers: { Authorization: 'Bearer ' + process.env.ROYALE_API_TOKEN }
-  });
-  if (!resp.ok) {
-    throw new Error('Royale API error ' + resp.status + ' for ' + endpoint + ': ' + (await resp.text()));
-  }
-  return resp.json();
-}
-
-function normalizeClanTag(input) {
-  let t = String(input || '').trim().toUpperCase();
-  if (!t) return '';
-  if (t.charAt(0) !== '#') t = '#' + t;
-  return t;
-}
-
-// Fetches and computes rows for ONE clan. Returns { clanTag, clanName, rows }.
-async function lookupOneClan(tag) {
-  const encTag = encodeURIComponent(tag);
-  const clanInfo = await royaleApiGet('/clans/' + encTag);
-
-  let currentParticipants = {};
-  try {
-    const currentRace = await royaleApiGet('/clans/' + encTag + '/currentriverrace');
-    (currentRace.clan.participants || []).forEach((p) => {
-      currentParticipants[p.tag] = { name: p.name, attacks: p.decksUsed, score: p.fame };
-    });
-  } catch (err) {
-    // no race currently running — fine, just skip "live" columns
-  }
-
-  const log = await royaleApiGet('/clans/' + encTag + '/riverracelog?limit=5');
-  const races = (log.items || []).slice(0, 5); // races[0] = most recent
-  const history = {};
-
-  races.forEach((race, weekIndex) => {
-    const standing = (race.standings || []).find((s) => s.clan.tag === tag);
-    if (!standing) return;
-    (standing.clan.participants || []).forEach((p) => {
-      if (!history[p.tag]) history[p.tag] = { name: p.name, scores: [], attacks: [], byWeek: [] };
-      history[p.tag].scores.push(p.fame);
-      history[p.tag].attacks.push(p.decksUsed);
-      history[p.tag].byWeek[weekIndex] = { score: p.fame, attacks: p.decksUsed };
-    });
-  });
-
-  const currentMemberTags = {};
-  (clanInfo.memberList || []).forEach((m) => { currentMemberTags[m.tag] = m.name; });
-
-  const rows = Object.keys(currentMemberTags).map((playerTag) => {
-    const h = history[playerTag] || { scores: [], attacks: [], byWeek: [] };
-    const racesCounted = h.scores.length;
-    const totalScore = h.scores.reduce((a, b) => a + b, 0);
-    const totalAttacks = h.attacks.reduce((a, b) => a + b, 0);
-    const cur = currentParticipants[playerTag];
-    const weeks = [0, 1, 2, 3].map((i) => h.byWeek[i] || null);
-
-    return {
-      tag: playerTag,
-      name: currentMemberTags[playerTag] || h.name || (cur && cur.name) || '(unknown)',
-      clanTag: tag,
-      clanName: clanInfo.name,
-      thisWeekAttacks: cur ? cur.attacks : null,
-      thisWeekScore: cur ? cur.score : null,
-      weeks,
-      fiveWeekAvgAttacks: racesCounted ? Math.round((totalAttacks / racesCounted) * 100) / 100 : null,
-      fiveWeekAvgScore: racesCounted ? Math.round((totalScore / racesCounted) * 100) / 100 : null,
-      racesCounted
-    };
-  });
-
-  return { clanTag: tag, clanName: clanInfo.name, memberCount: rows.length, rows };
-}
+const {
+  FAMILY_TAGS,
+  normalizeClanTag,
+  looksLikeTag,
+  getPlayerInfo,
+  lookupOneClan,
+  extractCardCollection,
+  royaleApiGet
+} = require('../lib/clanData');
 
 module.exports = async function handler(req, res) {
-  const tagsParam = req.query.tags || req.query.tag;
-  if (!tagsParam) {
-    res.status(400).json({ error: 'Missing clan tag(s).' });
-    return;
-  }
-
-  const tags = String(tagsParam)
-    .split(',')
-    .map(normalizeClanTag)
-    .filter(Boolean);
-
-  if (tags.length === 0) {
-    res.status(400).json({ error: 'No valid clan tags provided.' });
-    return;
-  }
+  const playerQuery = req.query.player;
+  const clanQuery = req.query.tags || req.query.tag;
+  const includeCards = req.query.cards === '1';
 
   try {
+    // ---- PLAYER SEARCH (by tag or name) ----
+    if (playerQuery) {
+      const raw = String(playerQuery).trim();
+
+      if (looksLikeTag(raw)) {
+        const tag = normalizeClanTag(raw);
+        let playerInfo;
+        try {
+          playerInfo = await getPlayerInfo(tag);
+        } catch (err) {
+          res.status(200).json({ clans: [], failedClans: [], totalMembers: 0, rows: [], notFound: true });
+          return;
+        }
+
+        const cards = extractCardCollection(playerInfo);
+
+        if (!playerInfo.clan || !playerInfo.clan.tag) {
+          res.status(200).json({
+            clans: [],
+            failedClans: [],
+            totalMembers: 1,
+            rows: [{
+              tag: playerInfo.tag,
+              name: playerInfo.name,
+              clanTag: null,
+              clanName: '(no clan)',
+              thisWeekAttacks: null,
+              thisWeekScore: null,
+              weeks: [null, null, null, null],
+              fiveWeekAvgAttacks: null,
+              fiveWeekAvgScore: null,
+              racesCounted: 0,
+              cards
+            }]
+          });
+          return;
+        }
+
+        const clanResult = await lookupOneClan(playerInfo.clan.tag, false);
+        const row = clanResult.rows.find((r) => r.tag === playerInfo.tag);
+        if (row) row.cards = cards;
+
+        res.status(200).json({
+          clans: [{ clanTag: clanResult.clanTag, clanName: clanResult.clanName, memberCount: clanResult.memberCount }],
+          failedClans: [],
+          totalMembers: row ? 1 : 0,
+          rows: row ? [row] : []
+        });
+        return;
+      }
+
+      // Name search across family clans (no global name search exists)
+      const results = await Promise.all(
+        FAMILY_TAGS.map((tag) => lookupOneClan(tag, includeCards).catch((err) => ({ clanTag: tag, error: err.message })))
+      );
+      const clans = results.filter((r) => !r.error);
+      const failedClans = results.filter((r) => r.error);
+      const needle = raw.toLowerCase();
+      const rows = clans.flatMap((c) => c.rows).filter((r) => r.name.toLowerCase().includes(needle));
+
+      res.status(200).json({
+        clans: clans.map((c) => ({ clanTag: c.clanTag, clanName: c.clanName, memberCount: c.memberCount })),
+        failedClans,
+        totalMembers: rows.length,
+        rows,
+        nameSearch: true
+      });
+      return;
+    }
+
+    // ---- CLAN SEARCH (by tag(s), or by clan name) ----
+    if (!clanQuery) {
+      res.status(400).json({ error: 'Missing clan tag(s) or player search.' });
+      return;
+    }
+
+    const rawInputs = String(clanQuery).split(',').map((s) => s.trim()).filter(Boolean);
+    const allLookLikeTags = rawInputs.every(looksLikeTag);
+
+    let tags;
+    if (allLookLikeTags) {
+      tags = rawInputs.map(normalizeClanTag);
+    } else {
+      // Treat as a clan NAME search — only searchable within your family clans
+      // (the API has no global clan-name search).
+      const needle = rawInputs.join(' ').toLowerCase();
+      const nameChecks = await Promise.all(
+        FAMILY_TAGS.map((tag) =>
+          royaleApiGet('/clans/' + encodeURIComponent(tag))
+            .then((info) => ({ tag, name: info.name }))
+            .catch(() => null)
+        )
+      );
+      tags = nameChecks
+        .filter((c) => c && c.name.toLowerCase().includes(needle))
+        .map((c) => c.tag);
+
+      if (tags.length === 0) {
+        res.status(200).json({ clans: [], failedClans: [], totalMembers: 0, rows: [], noClanNameMatch: true });
+        return;
+      }
+    }
+
     const results = await Promise.all(
-      tags.map((tag) =>
-        lookupOneClan(tag).catch((err) => ({ clanTag: tag, error: err.message }))
-      )
+      tags.map((tag) => lookupOneClan(tag, includeCards).catch((err) => ({ clanTag: tag, error: err.message })))
     );
 
     const clans = results.filter((r) => !r.error);
     const failedClans = results.filter((r) => r.error);
-
     const rows = clans.flatMap((c) => c.rows);
     rows.sort((a, b) => (b.fiveWeekAvgScore || 0) - (a.fiveWeekAvgScore || 0));
 
