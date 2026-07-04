@@ -111,14 +111,25 @@
     function renderTable(data) {
       const resultsEl = document.getElementById('results');
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
-      html += '<tr><th>Name</th><th>In Clan</th><th>This Wk Atk</th><th>This Wk Score</th><th>5wk Avg Atk</th><th>5wk Avg Score</th></tr>';
+      html += '<tr><th>Name</th>' +
+        '<th>Live Atk</th><th>Live Score</th>' +
+        '<th>Wk1 Atk</th><th>Wk1 Score</th>' +
+        '<th>Wk2 Atk</th><th>Wk2 Score</th>' +
+        '<th>Wk3 Atk</th><th>Wk3 Score</th>' +
+        '<th>Wk4 Atk</th><th>Wk4 Score</th>' +
+        '<th>5wk Avg Atk</th><th>5wk Avg Score</th></tr>';
       data.rows.forEach((r) => {
+        const w = r.weeks || [];
         html += '<tr>' +
           '<td>' + r.name + '</td>' +
-          '<td>' + r.inClan + '</td>' +
           '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>' +
-          '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>' +
-          '<td>' + (r.fiveWeekAvgAttacks == null ? '–' : r.fiveWeekAvgAttacks) + '</td>' +
+          '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>';
+        for (let i = 0; i < 4; i++) {
+          const wk = w[i];
+          html += '<td>' + (wk ? wk.attacks : '–') + '</td>' +
+                  '<td>' + (wk ? wk.score : '–') + '</td>';
+        }
+        html += '<td>' + (r.fiveWeekAvgAttacks == null ? '–' : r.fiveWeekAvgAttacks) + '</td>' +
           '<td>' + (r.fiveWeekAvgScore == null ? '–' : r.fiveWeekAvgScore) + '</td>' +
           '</tr>';
       });
