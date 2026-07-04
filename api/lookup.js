@@ -1,102 +1,145 @@
-// api/lookup.js
-// Serverless function (runs on Vercel). Keeps the Royale API token on the
-// server side — the browser never sees it. Set ROYALE_API_TOKEN as an
-// Environment Variable in your Vercel project settings (not in this file).
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clan Lookup</title>
+  <style>
+    :root {
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --border: #e3e6eb;
+      --text: #1a1d23;
+      --muted: #6b7280;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px 16px 60px;
+    }
+    .wrap { max-width: 480px; margin: 0 auto; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .sub { color: var(--muted); font-size: 13px; margin: 0 0 24px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    input {
+      width: 100%; padding: 12px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 15px; margin-bottom: 10px;
+    }
+    button {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:active { background: var(--accent-dark); }
+    button:disabled { background: #b9c2d0; cursor: not-allowed; }
+    #status { font-size: 13px; margin-top: 8px; min-height: 16px; }
+    #status.ok { color: #15803d; }
+    #status.err { color: #b91c1c; }
+    #status.busy { color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; padding: 6px 4px; color: var(--muted); }
+    td { padding: 6px 4px; border-top: 1px solid var(--border); }
+    .spinner {
+      display: inline-block; width: 12px; height: 12px;
+      border: 2px solid #cbd5e1; border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      vertical-align: -2px; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Clan Lookup</h1>
+    <p class="sub">Enter any clan tag to see this week's attacks/score, 5-week averages, and who's currently in clan.</p>
 
-const API_BASE = 'https://proxy.royaleapi.dev/v1';
+    <div class="card">
+      <input id="clanTagInput" type="text" placeholder="#XXXXXXX">
+      <button onclick="lookupClan()">Look up clan</button>
+      <div id="status"></div>
+    </div>
 
-async function royaleApiGet(endpoint) {
-  const resp = await fetch(API_BASE + endpoint, {
-    headers: { Authorization: 'Bearer ' + process.env.ROYALE_API_TOKEN }
-  });
-  if (!resp.ok) {
-    throw new Error('Royale API error ' + resp.status + ' for ' + endpoint + ': ' + (await resp.text()));
-  }
-  return resp.json();
-}
+    <div id="results"></div>
+  </div>
 
-function normalizeClanTag(input) {
-  let t = String(input || '').trim().toUpperCase();
-  if (!t) return '';
-  if (t.charAt(0) !== '#') t = '#' + t;
-  return t;
-}
+  <script>
+    async function lookupClan() {
+      const tag = document.getElementById('clanTagInput').value.trim();
+      const statusEl = document.getElementById('status');
+      const resultsEl = document.getElementById('results');
+      resultsEl.innerHTML = '';
+      statusEl.className = 'busy';
+      statusEl.innerHTML = '<span class="spinner"></span>Looking up…';
 
-module.exports = async function handler(req, res) {
-  const tag = normalizeClanTag(req.query.tag);
-  if (!tag) {
-    res.status(400).json({ error: 'Missing or invalid clan tag.' });
-    return;
-  }
+      try {
+        const resp = await fetch('/api/lookup?tag=' + encodeURIComponent(tag));
+        const data = await resp.json();
 
-  try {
-    const encTag = encodeURIComponent(tag);
-    const clanInfo = await royaleApiGet('/clans/' + encTag);
+        if (!resp.ok || data.error) {
+          statusEl.className = 'err';
+          statusEl.textContent = 'Error: ' + (data.error || 'Unknown error');
+          return;
+        }
 
-    let currentParticipants = {};
-    let thisWeekAvailable = false;
-    try {
-      const currentRace = await royaleApiGet('/clans/' + encTag + '/currentriverrace');
-      thisWeekAvailable = true;
-      (currentRace.clan.participants || []).forEach((p) => {
-        currentParticipants[p.tag] = { name: p.name, attacks: p.decksUsed, score: p.fame };
-      });
-    } catch (err) {
-      // no race currently running — fine, just skip "this week" columns
+        statusEl.className = 'ok';
+        statusEl.textContent = data.clanName + ' — ' + data.memberCount + ' members' +
+          (data.thisWeekAvailable ? '' : ' (no war currently running — showing 5-week history only)');
+        renderTable(data);
+      } catch (err) {
+        statusEl.className = 'err';
+        statusEl.textContent = 'Error: ' + err.message;
+      }
     }
 
-    const log = await royaleApiGet('/clans/' + encTag + '/riverracelog?limit=5');
-    const races = (log.items || []).slice(0, 5);
-    const history = {};
-
-    races.forEach((race) => {
-      const standing = (race.standings || []).find((s) => s.clan.tag === tag);
-      if (!standing) return;
-      (standing.clan.participants || []).forEach((p) => {
-        if (!history[p.tag]) history[p.tag] = { name: p.name, scores: [], attacks: [] };
-        history[p.tag].scores.push(p.fame);
-        history[p.tag].attacks.push(p.decksUsed);
+    function renderTable(data) {
+      const resultsEl = document.getElementById('results');
+      let html = '<div class="card"><div style="overflow-x:auto;"><table>';
+      html += '<tr><th>Name</th>' +
+        '<th>Live Atk</th><th>Live Score</th>' +
+        '<th>Wk1 Atk</th><th>Wk1 Score</th>' +
+        '<th>Wk2 Atk</th><th>Wk2 Score</th>' +
+        '<th>Wk3 Atk</th><th>Wk3 Score</th>' +
+        '<th>Wk4 Atk</th><th>Wk4 Score</th>' +
+        '<th>5wk Avg Atk</th><th>5wk Avg Score</th></tr>';
+      data.rows.forEach((r) => {
+        const w = r.weeks || [];
+        html += '<tr>' +
+          '<td>' + r.name + '</td>' +
+          '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>' +
+          '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>';
+        for (let i = 0; i < 4; i++) {
+          const wk = w[i];
+          html += '<td>' + (wk ? wk.attacks : '–') + '</td>' +
+                  '<td>' + (wk ? wk.score : '–') + '</td>';
+        }
+        html += '<td>' + (r.fiveWeekAvgAttacks == null ? '–' : r.fiveWeekAvgAttacks) + '</td>' +
+          '<td>' + (r.fiveWeekAvgScore == null ? '–' : r.fiveWeekAvgScore) + '</td>' +
+          '</tr>';
       });
+      html += '</table></div></div>';
+      resultsEl.innerHTML = html;
+    }
+
+    document.getElementById('clanTagInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') lookupClan();
     });
-
-    const currentMemberTags = {};
-    (clanInfo.memberList || []).forEach((m) => { currentMemberTags[m.tag] = m.name; });
-
-    const allTags = new Set([...Object.keys(currentMemberTags), ...Object.keys(history)]);
-
-    const rows = [];
-    allTags.forEach((playerTag) => {
-      const h = history[playerTag] || { scores: [], attacks: [] };
-      const racesCounted = h.scores.length;
-      const totalScore = h.scores.reduce((a, b) => a + b, 0);
-      const totalAttacks = h.attacks.reduce((a, b) => a + b, 0);
-      const cur = currentParticipants[playerTag];
-
-      rows.push({
-        tag: playerTag,
-        name: currentMemberTags[playerTag] || h.name || (cur && cur.name) || '(unknown)',
-        inClan: currentMemberTags.hasOwnProperty(playerTag) ? 'Yes' : 'No',
-        thisWeekAttacks: cur ? cur.attacks : null,
-        thisWeekScore: cur ? cur.score : null,
-        fiveWeekAvgAttacks: racesCounted ? Math.round((totalAttacks / racesCounted) * 100) / 100 : null,
-        fiveWeekAvgScore: racesCounted ? Math.round((totalScore / racesCounted) * 100) / 100 : null,
-        racesCounted
-      });
-    });
-
-    rows.sort((a, b) => {
-      if (a.inClan !== b.inClan) return a.inClan === 'Yes' ? -1 : 1;
-      return (b.fiveWeekAvgScore || 0) - (a.fiveWeekAvgScore || 0);
-    });
-
-    res.status(200).json({
-      clanTag: tag,
-      clanName: clanInfo.name,
-      memberCount: (clanInfo.memberList || []).length,
-      thisWeekAvailable,
-      rows
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-}
+  </script>
+</body>
+</html>
