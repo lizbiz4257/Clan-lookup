@@ -81,15 +81,19 @@
       <input id="clanTagInput" type="text" placeholder="#XXXXXXX">
       <button onclick="lookupClan()">Look up this clan</button>
       <button class="secondary" onclick="lookupFamily()">Search all family clans</button>
-      <div id="status"></div>
+      <div id="clanStatus" style="font-size:13px; margin-top:8px; min-height:16px;"></div>
     </div>
 
     <div class="card">
       <input id="playerInput" type="text" placeholder="Player name or #tag">
       <button onclick="lookupPlayer()">Look up player</button>
+      <div id="playerStatus" style="font-size:13px; margin-top:8px; min-height:16px;"></div>
     </div>
 
-    <div id="results"></div>
+    <button class="secondary" onclick="searchBoth()" style="max-width:720px; margin: -6px auto 14px; display:block;">Search both at once</button>
+
+    <div id="clanResults"></div>
+    <div id="playerResults"></div>
   </div>
 
   <script>
@@ -100,7 +104,8 @@
       '#QVY92JLV', '#GQ20UQR8'
     ];
 
-    let lastData = null;
+    let lastClanData = null;
+    let lastPlayerData = null;
 
     async function lookupClan() {
       const tag = document.getElementById('clanTagInput').value.trim();
@@ -118,9 +123,19 @@
       await runPlayerLookup(query);
     }
 
+    async function searchBoth() {
+      const clanTag = document.getElementById('clanTagInput').value.trim();
+      const playerQuery = document.getElementById('playerInput').value.trim();
+      const tasks = [];
+      if (clanTag) tasks.push(runLookup([clanTag]));
+      if (playerQuery) tasks.push(runPlayerLookup(playerQuery));
+      if (tasks.length === 0) return;
+      await Promise.all(tasks);
+    }
+
     async function runPlayerLookup(query) {
-      const statusEl = document.getElementById('status');
-      const resultsEl = document.getElementById('results');
+      const statusEl = document.getElementById('playerStatus');
+      const resultsEl = document.getElementById('playerResults');
       const allButtons = document.querySelectorAll('button');
       allButtons.forEach(b => b.disabled = true);
       resultsEl.innerHTML = '';
@@ -148,10 +163,10 @@
           return;
         }
 
-        lastData = data;
+        lastPlayerData = data;
         statusEl.className = 'ok';
         statusEl.textContent = data.rows.length + ' match' + (data.rows.length > 1 ? 'es' : '') + ' found';
-        renderTable(data);
+        renderTable(data, resultsEl, 'lastPlayerData');
       } catch (err) {
         allButtons.forEach(b => b.disabled = false);
         statusEl.className = 'err';
@@ -160,8 +175,8 @@
     }
 
     async function runLookup(tags) {
-      const statusEl = document.getElementById('status');
-      const resultsEl = document.getElementById('results');
+      const statusEl = document.getElementById('clanStatus');
+      const resultsEl = document.getElementById('clanResults');
       const allButtons = document.querySelectorAll('button');
       allButtons.forEach(b => b.disabled = true);
       resultsEl.innerHTML = '';
@@ -179,7 +194,7 @@
           return;
         }
 
-        lastData = data;
+        lastClanData = data;
         let statusText = data.clans.map(c => c.clanName + ' (' + c.memberCount + ')').join(', ') +
           ' — ' + data.totalMembers + ' total members';
         if (data.failedClans && data.failedClans.length) {
@@ -187,7 +202,7 @@
         }
         statusEl.className = 'ok';
         statusEl.textContent = statusText;
-        renderTable(data);
+        renderTable(data, resultsEl, 'lastClanData');
       } catch (err) {
         allButtons.forEach(b => b.disabled = false);
         statusEl.className = 'err';
@@ -195,9 +210,7 @@
       }
     }
 
-    function renderTable(data) {
-      const resultsEl = document.getElementById('results');
-
+    function renderTable(data, resultsEl, dataVarName) {
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
       html += '<tr><th>Name</th><th>Tag</th><th>Clan</th><th>In Clan</th>' +
         '<th>Score This Week</th><th>Cards Played</th>' +
@@ -222,26 +235,26 @@
           '</tr>';
       });
       html += '</table></div>';
-      html += '<button style="margin-top:12px;" onclick="downloadExcel()">Download to Excel</button>';
+      html += '<button style="margin-top:12px;" onclick="downloadExcel(' + dataVarName + ')">Download to Excel</button>';
       html += '</div>';
       resultsEl.innerHTML = html;
     }
 
-    function downloadExcel() {
-      if (!lastData) return;
-      const multiClan = lastData.clans.length > 1;
+    function downloadExcel(data) {
+      if (!data) return;
+      const multiClan = data.clans.length > 1;
 
       const headers = ['Name', 'Tag', 'Clan', 'In Clan', 'Score This Week', 'Cards Played', 'Total 5k', 'Elo', '5wa', '5kP', '5kG', '5kPPG'];
 
-      const data = lastData.rows.map((r) => ([
+      const rows = data.rows.map((r) => ([
         r.name, r.tag, r.clanName || '', r.inClan, r.thisWeekScore, r.thisWeekAttacks,
         r.total5k, r.elo, r.fivewa, r.fiveKP, r.fiveKG, r.fiveKPPG
       ]));
 
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Clan Data');
-      const filename = multiClan ? 'clan-family-lookup.xlsx' : (lastData.clans[0].clanName.replace(/[^a-z0-9]/gi, '_') + '.xlsx');
+      const filename = multiClan ? 'clan-family-lookup.xlsx' : (data.clans[0] ? data.clans[0].clanName.replace(/[^a-z0-9]/gi, '_') + '.xlsx' : 'player-lookup.xlsx');
       XLSX.writeFile(wb, filename);
     }
 
