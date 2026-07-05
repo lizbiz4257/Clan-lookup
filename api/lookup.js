@@ -10,6 +10,7 @@ const {
   looksLikeTag,
   getPlayerInfo,
   lookupOneClan,
+  buildFamilyIndex,
   royaleApiGet
 } = require('../lib/clanData');
 
@@ -18,6 +19,10 @@ module.exports = async function handler(req, res) {
   const clanQuery = req.query.tags || req.query.tag;
 
   try {
+    // Built once per request, reused everywhere below — this is what powers
+    // "last known family clan" without a per-player live lookup.
+    const familyIndex = await buildFamilyIndex();
+
     // ---- PLAYER SEARCH (by tag or name) ----
     if (playerQuery) {
       const raw = String(playerQuery).trim();
@@ -43,6 +48,7 @@ module.exports = async function handler(req, res) {
               clanTag: null,
               clanName: null,
               inClan: 'No',
+              lastFamilyClan: null,
               thisWeekScore: null,
               thisWeekAttacks: null,
               total5k: null,
@@ -56,7 +62,7 @@ module.exports = async function handler(req, res) {
           return;
         }
 
-        const clanResult = await lookupOneClan(playerInfo.clan.tag);
+        const clanResult = await lookupOneClan(playerInfo.clan.tag, familyIndex);
         const row = clanResult.rows.find((r) => r.tag === playerInfo.tag);
 
         res.status(200).json({
@@ -70,12 +76,24 @@ module.exports = async function handler(req, res) {
 
       // Name search across family clans (no global name search exists)
       const results = await Promise.all(
-        FAMILY_TAGS.map((tag) => lookupOneClan(tag).catch((err) => ({ clanTag: tag, error: err.message })))
+        FAMILY_TAGS.map((tag) => lookupOneClan(tag, familyIndex).catch((err) => ({ clanTag: tag, error: err.message })))
       );
       const clans = results.filter((r) => !r.error);
       const failedClans = results.filter((r) => r.error);
       const needle = raw.toLowerCase();
-      const rows = clans.flatMap((c) => c.rows).filter((r) => r.name.toLowerCase().includes(needle));
+      const allMatches = clans.flatMap((c) => c.rows).filter((r) => r.name.toLowerCase().includes(needle));
+
+      // A player can show up once per family clan they have ANY trace in
+      // (current membership or recent history) — collapse to one row per
+      // player, preferring whichever row shows them as a current member.
+      const byTag = {};
+      allMatches.forEach((r) => {
+        const existing = byTag[r.tag];
+        if (!existing || (r.inClan === 'Yes' && existing.inClan !== 'Yes')) {
+          byTag[r.tag] = r;
+        }
+      });
+      const rows = Object.values(byTag);
 
       res.status(200).json({
         clans: clans.map((c) => ({ clanTag: c.clanTag, clanName: c.clanName, memberCount: c.memberCount })),
@@ -121,7 +139,7 @@ module.exports = async function handler(req, res) {
     }
 
     const results = await Promise.all(
-      tags.map((tag) => lookupOneClan(tag).catch((err) => ({ clanTag: tag, error: err.message })))
+      tags.map((tag) => lookupOneClan(tag, familyIndex).catch((err) => ({ clanTag: tag, error: err.message })))
     );
 
     const clans = results.filter((r) => !r.error);
