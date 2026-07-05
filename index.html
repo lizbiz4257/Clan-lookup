@@ -90,7 +90,8 @@
       <div id="playerStatus" style="font-size:13px; margin-top:8px; min-height:16px;"></div>
     </div>
 
-    <button class="secondary" onclick="searchBoth()" style="max-width:720px; margin: -6px auto 14px; display:block;">Search both at once</button>
+    <button class="secondary" onclick="searchBoth()" style="max-width:720px; margin: -6px auto 4px; display:block;">Find this player, only within the clan above</button>
+    <p style="text-align:center; color:var(--muted); font-size:12px; margin:0 0 14px;">Uses whatever's in the clan box to narrow the player search</p>
 
     <div id="clanResults"></div>
     <div id="playerResults"></div>
@@ -126,14 +127,11 @@
     async function searchBoth() {
       const clanTag = document.getElementById('clanTagInput').value.trim();
       const playerQuery = document.getElementById('playerInput').value.trim();
-      const tasks = [];
-      if (clanTag) tasks.push(runLookup([clanTag]));
-      if (playerQuery) tasks.push(runPlayerLookup(playerQuery));
-      if (tasks.length === 0) return;
-      await Promise.all(tasks);
+      if (!playerQuery) return;
+      await runPlayerLookup(playerQuery, clanTag);
     }
 
-    async function runPlayerLookup(query) {
+    async function runPlayerLookup(query, clanScope) {
       const statusEl = document.getElementById('playerStatus');
       const resultsEl = document.getElementById('playerResults');
       const allButtons = document.querySelectorAll('button');
@@ -143,7 +141,9 @@
       statusEl.innerHTML = '<span class="spinner"></span>Looking up…';
 
       try {
-        const resp = await fetch('/api/lookup?player=' + encodeURIComponent(query));
+        let url = '/api/lookup?player=' + encodeURIComponent(query);
+        if (clanScope) url += '&tags=' + encodeURIComponent(clanScope);
+        const resp = await fetch(url);
         const data = await resp.json();
         allButtons.forEach(b => b.disabled = false);
 
@@ -157,15 +157,20 @@
           statusEl.textContent = 'No player found with that tag.';
           return;
         }
+        if (data.noClanNameMatch) {
+          statusEl.className = 'err';
+          statusEl.textContent = 'No clan matched "' + clanScope + '".';
+          return;
+        }
         if (data.rows.length === 0) {
           statusEl.className = 'err';
-          statusEl.textContent = 'No matches found in your family clans for "' + query + '".';
+          statusEl.textContent = 'No matches found for "' + query + '"' + (clanScope ? ' in "' + clanScope + '"' : ' in your family clans') + '.';
           return;
         }
 
         lastPlayerData = data;
         statusEl.className = 'ok';
-        statusEl.textContent = data.rows.length + ' match' + (data.rows.length > 1 ? 'es' : '') + ' found';
+        statusEl.textContent = data.rows.length + ' match' + (data.rows.length > 1 ? 'es' : '') + ' found' + (clanScope ? ' in ' + clanScope : '');
         renderTable(data, resultsEl, 'lastPlayerData');
       } catch (err) {
         allButtons.forEach(b => b.disabled = false);
@@ -267,3 +272,4 @@
   </script>
 </body>
 </html>
+
