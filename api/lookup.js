@@ -2,7 +2,7 @@
 // Usage:
 //   /api/lookup?tag=XXXXXXXX          -> single clan
 //   /api/lookup?tags=TAG1,TAG2,...    -> multiple clans combined
-//   /api/lookup?player=NAME_OR_TAG    -> single player (war stats + card collection)
+//   /api/lookup?player=NAME_OR_TAG    -> single player war stats
 
 const {
   FAMILY_TAGS,
@@ -10,14 +10,12 @@ const {
   looksLikeTag,
   getPlayerInfo,
   lookupOneClan,
-  extractCardCollection,
   royaleApiGet
 } = require('../lib/clanData');
 
 module.exports = async function handler(req, res) {
   const playerQuery = req.query.player;
   const clanQuery = req.query.tags || req.query.tag;
-  const includeCards = req.query.cards === '1';
 
   try {
     // ---- PLAYER SEARCH (by tag or name) ----
@@ -34,8 +32,6 @@ module.exports = async function handler(req, res) {
           return;
         }
 
-        const cards = extractCardCollection(playerInfo);
-
         if (!playerInfo.clan || !playerInfo.clan.tag) {
           res.status(200).json({
             clans: [],
@@ -45,22 +41,23 @@ module.exports = async function handler(req, res) {
               tag: playerInfo.tag,
               name: playerInfo.name,
               clanTag: null,
-              clanName: '(no clan)',
-              thisWeekAttacks: null,
+              clanName: null,
+              inClan: 'No',
               thisWeekScore: null,
-              weeks: [null, null, null, null],
-              fiveWeekAvgAttacks: null,
-              fiveWeekAvgScore: null,
-              racesCounted: 0,
-              cards
+              thisWeekAttacks: null,
+              total5k: null,
+              elo: null,
+              fivewa: null,
+              fiveKP: null,
+              fiveKG: null,
+              fiveKPPG: null
             }]
           });
           return;
         }
 
-        const clanResult = await lookupOneClan(playerInfo.clan.tag, false);
+        const clanResult = await lookupOneClan(playerInfo.clan.tag);
         const row = clanResult.rows.find((r) => r.tag === playerInfo.tag);
-        if (row) row.cards = cards;
 
         res.status(200).json({
           clans: [{ clanTag: clanResult.clanTag, clanName: clanResult.clanName, memberCount: clanResult.memberCount }],
@@ -73,7 +70,7 @@ module.exports = async function handler(req, res) {
 
       // Name search across family clans (no global name search exists)
       const results = await Promise.all(
-        FAMILY_TAGS.map((tag) => lookupOneClan(tag, includeCards).catch((err) => ({ clanTag: tag, error: err.message })))
+        FAMILY_TAGS.map((tag) => lookupOneClan(tag).catch((err) => ({ clanTag: tag, error: err.message })))
       );
       const clans = results.filter((r) => !r.error);
       const failedClans = results.filter((r) => r.error);
@@ -124,13 +121,13 @@ module.exports = async function handler(req, res) {
     }
 
     const results = await Promise.all(
-      tags.map((tag) => lookupOneClan(tag, includeCards).catch((err) => ({ clanTag: tag, error: err.message })))
+      tags.map((tag) => lookupOneClan(tag).catch((err) => ({ clanTag: tag, error: err.message })))
     );
 
     const clans = results.filter((r) => !r.error);
     const failedClans = results.filter((r) => r.error);
     const rows = clans.flatMap((c) => c.rows);
-    rows.sort((a, b) => (b.fiveWeekAvgScore || 0) - (a.fiveWeekAvgScore || 0));
+    rows.sort((a, b) => (b.total5k || 0) - (a.total5k || 0));
 
     res.status(200).json({
       clans: clans.map((c) => ({ clanTag: c.clanTag, clanName: c.clanName, memberCount: c.memberCount })),
