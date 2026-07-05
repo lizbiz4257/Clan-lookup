@@ -199,7 +199,7 @@
       const resultsEl = document.getElementById('results');
 
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
-      html += '<tr><th>Name</th><th>Clan</th><th>In Clan</th>' +
+      html += '<tr><th>Name</th><th>Tag</th><th>Clan</th><th>In Clan</th>' +
         '<th>Score This Week</th><th>Cards Played</th>' +
         '<th>Total 5k</th><th>Elo</th><th>5wa</th>' +
         '<th>5kP</th><th>5kG</th><th>5kPPG</th>' +
@@ -208,6 +208,7 @@
       data.rows.forEach((r) => {
         html += '<tr>' +
           '<td>' + r.name + '</td>' +
+          '<td>' + r.tag + '</td>' +
           '<td>' + (r.clanName || '–') + '</td>' +
           '<td>' + r.inClan + '</td>' +
           '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>' +
@@ -230,10 +231,10 @@
       if (!lastData) return;
       const multiClan = lastData.clans.length > 1;
 
-      const headers = ['Name', 'Clan', 'In Clan', 'Score This Week', 'Cards Played', 'Total 5k', 'Elo', '5wa', '5kP', '5kG', '5kPPG'];
+      const headers = ['Name', 'Tag', 'Clan', 'In Clan', 'Score This Week', 'Cards Played', 'Total 5k', 'Elo', '5wa', '5kP', '5kG', '5kPPG'];
 
       const data = lastData.rows.map((r) => ([
-        r.name, r.clanName || '', r.inClan, r.thisWeekScore, r.thisWeekAttacks,
+        r.name, r.tag, r.clanName || '', r.inClan, r.thisWeekScore, r.thisWeekAttacks,
         r.total5k, r.elo, r.fivewa, r.fiveKP, r.fiveKG, r.fiveKPPG
       ]));
 
