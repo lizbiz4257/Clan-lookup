@@ -1,8 +1,10 @@
 // api/lookup.js
 // Usage:
-//   /api/lookup?tag=XXXXXXXX          -> single clan
-//   /api/lookup?tags=TAG1,TAG2,...    -> multiple clans combined
-//   /api/lookup?player=NAME_OR_TAG    -> single player war stats
+//   /api/lookup?tag=XXXXXXXX                  -> single clan
+//   /api/lookup?tags=TAG1,TAG2,...            -> multiple clans combined
+//   /api/lookup?player=NAME_OR_TAG            -> single player war stats
+//   /api/lookup?player=NAME&tags=TAG_OR_NAME  -> find that player, but only
+//                                                 within the given clan(s)
 
 const {
   FAMILY_TAGS,
@@ -13,6 +15,31 @@ const {
   buildFamilyIndex,
   royaleApiGet
 } = require('../lib/clanData');
+
+// Resolves a clan query (comma-separated tags, OR a clan name like "Baked")
+// into an array of actual clan tags. Returns [] if a name search matched nothing.
+async function resolveClanTags(clanQuery) {
+  const rawInputs = String(clanQuery).split(',').map((s) => s.trim()).filter(Boolean);
+  const allLookLikeTags = rawInputs.every(looksLikeTag);
+
+  if (allLookLikeTags) {
+    return rawInputs.map(normalizeClanTag);
+  }
+
+  // Treat as a clan NAME search — only searchable within your family clans
+  // (the API has no global clan-name search).
+  const needle = rawInputs.join(' ').toLowerCase();
+  const nameChecks = await Promise.all(
+    FAMILY_TAGS.map((tag) =>
+      royaleApiGet('/clans/' + encodeURIComponent(tag))
+        .then((info) => ({ tag, name: info.name }))
+        .catch(() => null)
+    )
+  );
+  return nameChecks
+    .filter((c) => c && c.name.toLowerCase().includes(needle))
+    .map((c) => c.tag);
+}
 
 module.exports = async function handler(req, res) {
   const playerQuery = req.query.player;
@@ -74,18 +101,28 @@ module.exports = async function handler(req, res) {
         return;
       }
 
-      // Name search across family clans (no global name search exists)
+      // Name search — scoped to specific clan(s) if the clan box was also
+      // filled in, otherwise across all 9 family clans.
+      let searchTags = FAMILY_TAGS;
+      if (clanQuery) {
+        searchTags = await resolveClanTags(clanQuery);
+        if (searchTags.length === 0) {
+          res.status(200).json({ clans: [], failedClans: [], totalMembers: 0, rows: [], noClanNameMatch: true });
+          return;
+        }
+      }
+
       const results = await Promise.all(
-        FAMILY_TAGS.map((tag) => lookupOneClan(tag, familyIndex).catch((err) => ({ clanTag: tag, error: err.message })))
+        searchTags.map((tag) => lookupOneClan(tag, familyIndex).catch((err) => ({ clanTag: tag, error: err.message })))
       );
       const clans = results.filter((r) => !r.error);
       const failedClans = results.filter((r) => r.error);
       const needle = raw.toLowerCase();
       const allMatches = clans.flatMap((c) => c.rows).filter((r) => r.name.toLowerCase().includes(needle));
 
-      // A player can show up once per family clan they have ANY trace in
-      // (current membership or recent history) — collapse to one row per
-      // player, preferring whichever row shows them as a current member.
+      // A player can show up once per clan they have ANY trace in (current
+      // membership or recent history) — collapse to one row per player,
+      // preferring whichever row shows them as a current member.
       const byTag = {};
       allMatches.forEach((r) => {
         const existing = byTag[r.tag];
@@ -111,31 +148,10 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    const rawInputs = String(clanQuery).split(',').map((s) => s.trim()).filter(Boolean);
-    const allLookLikeTags = rawInputs.every(looksLikeTag);
-
-    let tags;
-    if (allLookLikeTags) {
-      tags = rawInputs.map(normalizeClanTag);
-    } else {
-      // Treat as a clan NAME search — only searchable within your family clans
-      // (the API has no global clan-name search).
-      const needle = rawInputs.join(' ').toLowerCase();
-      const nameChecks = await Promise.all(
-        FAMILY_TAGS.map((tag) =>
-          royaleApiGet('/clans/' + encodeURIComponent(tag))
-            .then((info) => ({ tag, name: info.name }))
-            .catch(() => null)
-        )
-      );
-      tags = nameChecks
-        .filter((c) => c && c.name.toLowerCase().includes(needle))
-        .map((c) => c.tag);
-
-      if (tags.length === 0) {
-        res.status(200).json({ clans: [], failedClans: [], totalMembers: 0, rows: [], noClanNameMatch: true });
-        return;
-      }
+    const tags = await resolveClanTags(clanQuery);
+    if (tags.length === 0) {
+      res.status(200).json({ clans: [], failedClans: [], totalMembers: 0, rows: [], noClanNameMatch: true });
+      return;
     }
 
     const results = await Promise.all(
