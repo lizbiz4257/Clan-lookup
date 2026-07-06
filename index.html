@@ -94,6 +94,7 @@
     <p style="text-align:center; color:var(--muted); font-size:12px; margin:0 0 14px;">Uses whatever's in the clan box to narrow the player search</p>
 
     <div id="clanResults"></div>
+    <div id="newMembersResults"></div>
     <div id="playerResults"></div>
   </div>
 
@@ -208,6 +209,7 @@
         statusEl.className = 'ok';
         statusEl.textContent = statusText;
         renderTable(data, resultsEl, 'lastClanData');
+        renderNewMembersButton();
       } catch (err) {
         allButtons.forEach(b => b.disabled = false);
         statusEl.className = 'err';
@@ -215,46 +217,127 @@
       }
     }
 
+    function renderNewMembersButton() {
+      const el = document.getElementById('newMembersResults');
+      const newCount = (lastClanData.rows || []).filter(r => r.isNew).length;
+      if (newCount === 0) {
+        el.innerHTML = '';
+        return;
+      }
+      el.innerHTML = '<button class="secondary" onclick="showNewMembersOnly()">Show new members only (' + newCount + ')</button>';
+    }
+
+    function showNewMembersOnly() {
+      const el = document.getElementById('newMembersResults');
+      const newRows = (lastClanData.rows || []).filter(r => r.isNew);
+
+      let html = '<div class="card"><h2 style="font-size:14px; margin:0 0 4px;">New Members (' + newRows.length + ')</h2>';
+      html += '<p style="color:var(--muted); font-size:12px; margin:0 0 10px;">5-week history shown automatically if they came from another family clan. Blank "Prior Clan" means they joined from outside the family — check that clan directly by tag if you know it.</p>';
+      html += '<div style="overflow-x:auto;"><table>';
+      html += '<tr><th>Name</th><th>Tag</th><th>Clan</th><th>Prior Clan</th>' +
+        '<th>Wk1 Score</th><th>Wk1 Atk</th><th>Wk2 Score</th><th>Wk2 Atk</th>' +
+        '<th>Wk3 Score</th><th>Wk3 Atk</th><th>Wk4 Score</th><th>Wk4 Atk</th>' +
+        '<th>Wk5 Score</th><th>Wk5 Atk</th>' +
+        '<th>Prior Avg Score</th><th>Prior Avg Attacks</th><th>Weeks Tracked</th></tr>';
+      newRows.forEach((r) => {
+        const w = r.priorWeeks || [];
+        html += '<tr>' +
+          '<td>' + r.name + '</td>' +
+          '<td>' + r.tag + '</td>' +
+          '<td>' + (r.clanName || '–') + '</td>' +
+          '<td>' + (r.priorClanName || '– (outside family)') + '</td>';
+        for (let i = 0; i < 5; i++) {
+          const wk = w[i];
+          html += '<td>' + (wk ? wk.score : '–') + '</td>' + '<td>' + (wk ? wk.attacks : '–') + '</td>';
+        }
+        html += '<td>' + (r.priorAvgScore == null ? '–' : r.priorAvgScore) + '</td>' +
+          '<td>' + (r.priorAvgAttacks == null ? '–' : r.priorAvgAttacks) + '</td>' +
+          '<td>' + (r.priorWeeksTracked == null ? '–' : r.priorWeeksTracked) + '</td>' +
+          '</tr>';
+      });
+      html += '</table></div></div>';
+      el.innerHTML = html;
+    }
+
     function renderTable(data, resultsEl, dataVarName) {
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
-      html += '<tr><th>Name</th><th>Tag</th><th>Clan</th><th>In Clan</th>' +
+      html += '<tr><th>Name</th><th>Tag</th><th>Clan</th><th>In Clan</th><th>New?</th>' +
         '<th>Score This Week</th><th>Cards Played</th>' +
+        '<th>Wk1 Score</th><th>Wk1 Atk</th><th>Wk2 Score</th><th>Wk2 Atk</th>' +
+        '<th>Wk3 Score</th><th>Wk3 Atk</th><th>Wk4 Score</th><th>Wk4 Atk</th>' +
+        '<th>Wk5 Score</th><th>Wk5 Atk</th>' +
         '<th>Total 5k</th><th>Elo</th><th>5wa</th>' +
         '<th>5kP</th><th>5kG</th><th>5kPPG</th>' +
+        '<th>Prior Clan</th><th>Prior Avg Score</th><th>Prior Avg Attacks</th>' +
         '</tr>';
 
       data.rows.forEach((r) => {
+        const w = r.weeks || [];
         html += '<tr>' +
           '<td>' + r.name + '</td>' +
           '<td>' + r.tag + '</td>' +
           '<td>' + (r.clanName || '–') + '</td>' +
           '<td>' + r.inClan + '</td>' +
+          '<td>' + (r.isNew ? 'Yes' : '–') + '</td>' +
           '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>' +
-          '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>' +
-          '<td>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
+          '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>';
+        for (let i = 0; i < 5; i++) {
+          const wk = w[i];
+          html += '<td>' + (wk ? wk.score : '–') + '</td>' + '<td>' + (wk ? wk.attacks : '–') + '</td>';
+        }
+        html += '<td>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
           '<td>' + (r.elo == null ? '–' : r.elo) + '</td>' +
           '<td>' + (r.fivewa == null ? '–' : r.fivewa) + '</td>' +
           '<td>' + (r.fiveKP == null ? '–' : r.fiveKP) + '</td>' +
           '<td>' + (r.fiveKG == null ? '–' : r.fiveKG) + '</td>' +
           '<td>' + (r.fiveKPPG == null ? '–' : r.fiveKPPG) + '</td>' +
+          '<td>' + (r.priorClanName || '–') + '</td>' +
+          '<td>' + (r.priorAvgScore == null ? '–' : r.priorAvgScore) + '</td>' +
+          '<td>' + (r.priorAvgAttacks == null ? '–' : r.priorAvgAttacks) + '</td>' +
           '</tr>';
       });
       html += '</table></div>';
       html += '<button style="margin-top:12px;" onclick="downloadExcel(' + dataVarName + ')">Download to Excel</button>';
+      html += '<button class="secondary" style="margin-top:8px;" onclick="showSheetsFormula(' + dataVarName + ')">Get Google Sheets formula</button>';
+      html += '<div id="sheetsFormula-' + dataVarName + '" style="margin-top:8px;"></div>';
       html += '</div>';
       resultsEl.innerHTML = html;
+    }
+
+    function showSheetsFormula(data) {
+      const params = new URLSearchParams(window.location.search);
+      let url = window.location.origin + '/api/export-csv?';
+      if (data.clans && data.clans.length) {
+        url += 'tags=' + encodeURIComponent(data.clans.map(c => c.clanTag).join(','));
+      } else {
+        url = window.location.origin + '/api/export-csv?player=' + encodeURIComponent(document.getElementById('playerInput').value.trim());
+      }
+      const formula = '=IMPORTDATA("' + url + '")';
+      const varName = data === lastClanData ? 'lastClanData' : 'lastPlayerData';
+      const el = document.getElementById('sheetsFormula-' + varName);
+      el.innerHTML = '<div class="card" style="background:#f0f7ff;"><p style="font-size:12px; margin:0 0 8px;">Paste this into any cell in Google Sheets — it pulls live data automatically:</p>' +
+        '<textarea readonly style="width:100%; height:60px; font-family:monospace; font-size:11px; padding:8px; border:1px solid var(--border); border-radius:6px;">' + formula + '</textarea></div>';
     }
 
     function downloadExcel(data) {
       if (!data) return;
       const multiClan = data.clans.length > 1;
 
-      const headers = ['Name', 'Tag', 'Clan', 'In Clan', 'Score This Week', 'Cards Played', 'Total 5k', 'Elo', '5wa', '5kP', '5kG', '5kPPG'];
+      const headers = ['Name', 'Tag', 'Clan', 'In Clan', 'New?', 'Score This Week', 'Cards Played',
+        'Week 1 Score', 'Week 1 Attacks', 'Week 2 Score', 'Week 2 Attacks',
+        'Week 3 Score', 'Week 3 Attacks', 'Week 4 Score', 'Week 4 Attacks',
+        'Week 5 Score', 'Week 5 Attacks',
+        'Total 5k', 'Elo', '5wa', '5kP', '5kG', '5kPPG', 'Prior Clan', 'Prior Avg Score', 'Prior Avg Attacks'];
 
-      const rows = data.rows.map((r) => ([
-        r.name, r.tag, r.clanName || '', r.inClan, r.thisWeekScore, r.thisWeekAttacks,
-        r.total5k, r.elo, r.fivewa, r.fiveKP, r.fiveKG, r.fiveKPPG
-      ]));
+      const rows = data.rows.map((r) => {
+        const w = r.weeks || [];
+        const row = [r.name, r.tag, r.clanName || '', r.inClan, r.isNew ? 'Yes' : '', r.thisWeekScore, r.thisWeekAttacks];
+        for (let i = 0; i < 5; i++) {
+          row.push(w[i] ? w[i].score : null, w[i] ? w[i].attacks : null);
+        }
+        row.push(r.total5k, r.elo, r.fivewa, r.fiveKP, r.fiveKG, r.fiveKPPG, r.priorClanName || '', r.priorAvgScore, r.priorAvgAttacks);
+        return row;
+      });
 
       const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
       const wb = XLSX.utils.book_new();
@@ -272,4 +355,3 @@
   </script>
 </body>
 </html>
-
