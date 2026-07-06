@@ -71,13 +71,36 @@ module.exports = async function handler(req, res) {
     return;
   }
 
+  // Two cron triggers fire each day (covering both possible UTC offsets for
+  // 5:30pm Eastern, since DST shifts it) — only actually run the capture on
+  // whichever one lands at the real local time, computed via the proper
+  // Eastern timezone (handles DST automatically, no manual adjustment needed).
+  const easternNow = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false });
+  const [easternHour, easternMinute] = easternNow.split(':').map(Number);
+  const isTargetTime = easternHour === 17 && easternMinute >= 25 && easternMinute <= 35;
+
+  if (!isTargetTime && !req.query.force) {
+    res.status(200).json({ message: 'Skipped — not the target local time (currently ' + easternNow + ' Eastern).' });
+    return;
+  }
+
   try {
     const currentRace = await royaleApiGet('/clans/' + encodeURIComponent(BAKED_2_TAG) + '/currentriverrace');
     const participants = currentRace.clan.participants || [];
 
     const { data, sha } = await githubGetFile();
-    const baseline = data.baseline || {};
+    let baseline = data.baseline || {};
     const today = new Date().toISOString().slice(0, 10);
+
+    // Detect a new war week: fame resets to 0 in the game at the start of
+    // each week, so if most players' current fame is LESS than their stored
+    // baseline, that's a fresh week — reset the baseline instead of treating
+    // it as everyone losing points.
+    const matched = participants.filter((p) => baseline[p.tag] !== undefined);
+    const droppedCount = matched.filter((p) => p.fame < baseline[p.tag]).length;
+    if (matched.length > 0 && droppedCount > matched.length / 2) {
+      baseline = {};
+    }
 
     let suspiciousCount = 0;
     const contributions = participants.map((p) => {
