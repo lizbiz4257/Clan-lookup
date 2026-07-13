@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -106,6 +107,13 @@
       '#QVY92JLV', '#GQ20UQR8'
     ];
 
+    // !Baked! 2.5 (#G9LRRP82) and Dudes Reunited (#L0PQ2ULQ) are paused —
+    // still fully searchable individually by tag, just excluded from the
+    // bulk "Search all family clans" button.
+    const ACTIVE_FAMILY_TAGS = FAMILY_TAGS.filter(
+      (t) => t !== '#G9LRRP82' && t !== '#L0PQ2ULQ'
+    );
+
     let lastClanData = null;
     let lastPlayerData = null;
 
@@ -116,7 +124,7 @@
     }
 
     async function lookupFamily() {
-      await runLookup(FAMILY_TAGS);
+      await runLookup(ACTIVE_FAMILY_TAGS);
     }
 
     async function lookupPlayer() {
@@ -283,7 +291,8 @@
           '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>';
         for (let i = 0; i < 5; i++) {
           const wk = w[i];
-          html += '<td>' + (wk ? wk.score : '–') + '</td>' + '<td>' + (wk ? wk.attacks : '–') + '</td>';
+          const l2wMark = wk && wk.isL2W ? ' (L2W)' : '';
+          html += '<td>' + (wk ? wk.score + l2wMark : '–') + '</td>' + '<td>' + (wk ? wk.attacks : '–') + '</td>';
         }
         html += '<td>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
           '<td>' + (r.elo == null ? '–' : r.elo) + '</td>' +
@@ -333,7 +342,8 @@
         const w = r.weeks || [];
         const row = [r.name, r.tag, r.clanName || '', r.inClan, r.isNew ? 'Yes' : '', r.thisWeekScore, r.thisWeekAttacks];
         for (let i = 0; i < 5; i++) {
-          row.push(w[i] ? w[i].score : null, w[i] ? w[i].attacks : null);
+          const wk = w[i];
+          row.push(wk ? (wk.score + (wk.isL2W ? ' (L2W)' : '')) : null, wk ? wk.attacks : null);
         }
         row.push(r.total5k, r.elo, r.fivewa, r.fiveKP, r.fiveKG, r.fiveKPPG, r.priorClanName || '', r.priorAvgScore, r.priorAvgAttacks);
         return row;
