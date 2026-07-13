@@ -95,6 +95,7 @@
     <p style="text-align:center; color:var(--muted); font-size:12px; margin:0 0 14px;">Uses whatever's in the clan box to narrow the player search</p>
 
     <div id="clanResults"></div>
+    <div id="currentMembersResults"></div>
     <div id="newMembersResults"></div>
     <div id="playerResults"></div>
   </div>
@@ -217,12 +218,38 @@
         statusEl.className = 'ok';
         statusEl.textContent = statusText;
         renderTable(data, resultsEl, 'lastClanData');
+        renderCurrentMembersButton();
         renderNewMembersButton();
       } catch (err) {
         allButtons.forEach(b => b.disabled = false);
         statusEl.className = 'err';
         statusEl.textContent = 'Error: ' + err.message;
       }
+    }
+
+    function renderCurrentMembersButton() {
+      const el = document.getElementById('currentMembersResults');
+      const currentCount = (lastClanData.rows || []).filter(r => r.inClan === 'Yes').length;
+      const totalCount = (lastClanData.rows || []).length;
+      if (currentCount === totalCount) {
+        el.innerHTML = ''; // everyone shown is already a current member, no need for the button
+        return;
+      }
+      el.innerHTML = '<button class="secondary" onclick="showCurrentMembersOnly()">Show current members only (' + currentCount + ')</button>';
+    }
+
+    function showCurrentMembersOnly() {
+      const el = document.getElementById('currentMembersResults');
+      const filtered = { ...lastClanData, rows: (lastClanData.rows || []).filter(r => r.inClan === 'Yes') };
+      renderTable(filtered, el, 'lastClanData');
+      // Re-add the button so it doesn't disappear after filtering
+      el.insertAdjacentHTML('afterbegin', '<button class="secondary" style="margin-bottom:10px;" onclick="renderCurrentMembersButtonReset()">Show all (' + lastClanData.rows.length + ')</button>');
+    }
+
+    function renderCurrentMembersButtonReset() {
+      const resultsEl = document.getElementById('clanResults');
+      renderTable(lastClanData, resultsEl, 'lastClanData');
+      renderCurrentMembersButton();
     }
 
     function renderNewMembersButton() {
