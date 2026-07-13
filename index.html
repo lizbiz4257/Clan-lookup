@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -95,7 +94,6 @@
     <p style="text-align:center; color:var(--muted); font-size:12px; margin:0 0 14px;">Uses whatever's in the clan box to narrow the player search</p>
 
     <div id="clanResults"></div>
-    <div id="currentMembersResults"></div>
     <div id="newMembersResults"></div>
     <div id="playerResults"></div>
   </div>
@@ -217,8 +215,8 @@
         }
         statusEl.className = 'ok';
         statusEl.textContent = statusText;
-        renderTable(data, resultsEl, 'lastClanData');
-        renderCurrentMembersButton();
+        showCurrentOnly = true; // default to current members only on every fresh search
+        renderClanTableWithToggle();
         renderNewMembersButton();
       } catch (err) {
         allButtons.forEach(b => b.disabled = false);
@@ -227,29 +225,30 @@
       }
     }
 
-    function renderCurrentMembersButton() {
-      const el = document.getElementById('currentMembersResults');
-      const currentCount = (lastClanData.rows || []).filter(r => r.inClan === 'Yes').length;
-      const totalCount = (lastClanData.rows || []).length;
-      if (currentCount === totalCount) {
-        el.innerHTML = ''; // everyone shown is already a current member, no need for the button
-        return;
-      }
-      el.innerHTML = '<button class="secondary" onclick="showCurrentMembersOnly()">Show current members only (' + currentCount + ')</button>';
-    }
+    let showCurrentOnly = true;
 
-    function showCurrentMembersOnly() {
-      const el = document.getElementById('currentMembersResults');
-      const filtered = { ...lastClanData, rows: (lastClanData.rows || []).filter(r => r.inClan === 'Yes') };
-      renderTable(filtered, el, 'lastClanData');
-      // Re-add the button so it doesn't disappear after filtering
-      el.insertAdjacentHTML('afterbegin', '<button class="secondary" style="margin-bottom:10px;" onclick="renderCurrentMembersButtonReset()">Show all (' + lastClanData.rows.length + ')</button>');
-    }
-
-    function renderCurrentMembersButtonReset() {
+    function renderClanTableWithToggle() {
       const resultsEl = document.getElementById('clanResults');
-      renderTable(lastClanData, resultsEl, 'lastClanData');
-      renderCurrentMembersButton();
+      const allRows = lastClanData.rows || [];
+      const currentCount = allRows.filter(r => r.inClan === 'Yes').length;
+      const displayRows = showCurrentOnly ? allRows.filter(r => r.inClan === 'Yes') : allRows;
+      const dataToRender = { ...lastClanData, rows: displayRows };
+
+      resultsEl.innerHTML = '';
+      if (currentCount < allRows.length) {
+        const toggleLabel = showCurrentOnly
+          ? 'Show all (' + allRows.length + ', including former members)'
+          : 'Show current members only (' + currentCount + ')';
+        resultsEl.innerHTML = '<button class="secondary" style="margin-bottom:10px;" onclick="toggleCurrentOnly()">' + toggleLabel + '</button>';
+      }
+      const tableContainer = document.createElement('div');
+      resultsEl.appendChild(tableContainer);
+      renderTable(dataToRender, tableContainer, 'lastClanData');
+    }
+
+    function toggleCurrentOnly() {
+      showCurrentOnly = !showCurrentOnly;
+      renderClanTableWithToggle();
     }
 
     function renderNewMembersButton() {
@@ -392,3 +391,4 @@
   </script>
 </body>
 </html>
+
