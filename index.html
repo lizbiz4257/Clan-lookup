@@ -116,6 +116,11 @@
     let lastClanData = null;
     let lastPlayerData = null;
 
+    function playerLink(r) {
+      const cleanTag = (r.tag || '').replace('#', '');
+      return '<a href="https://royaleapi.com/player/' + cleanTag + '" target="_blank" style="color:var(--accent); text-decoration:none;">' + r.name + '</a>';
+    }
+
     async function lookupClan() {
       const tag = document.getElementById('clanTagInput').value.trim();
       if (!tag) return;
@@ -276,7 +281,7 @@
       newRows.forEach((r) => {
         const w = r.priorWeeks || [];
         html += '<tr>' +
-          '<td>' + r.name + '</td>' +
+          '<td>' + playerLink(r) + '</td>' +
           '<td>' + r.tag + '</td>' +
           '<td>' + (r.clanName || '–') + '</td>' +
           '<td>' + (r.priorClanName || '– (outside family)') + '</td>';
@@ -308,7 +313,7 @@
       data.rows.forEach((r) => {
         const w = r.weeks || [];
         html += '<tr>' +
-          '<td>' + r.name + '</td>' +
+          '<td>' + playerLink(r) + '</td>' +
           '<td>' + r.tag + '</td>' +
           '<td>' + (r.clanName || '–') + '</td>' +
           '<td>' + r.inClan + '</td>' +
@@ -318,7 +323,8 @@
         for (let i = 0; i < 5; i++) {
           const wk = w[i];
           const l2wMark = wk && wk.isL2W ? ' (L2W)' : '';
-          html += '<td>' + (wk ? wk.score + l2wMark : '–') + '</td>' + '<td>' + (wk ? wk.attacks : '–') + '</td>';
+          const priorMark = wk && wk.fromPriorClan ? ' *' : '';
+          html += '<td>' + (wk ? wk.score + l2wMark + priorMark : '–') + '</td>' + '<td>' + (wk ? wk.attacks : '–') + '</td>';
         }
         html += '<td>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
           '<td>' + (r.elo == null ? '–' : r.elo) + '</td>' +
@@ -391,4 +397,3 @@
   </script>
 </body>
 </html>
-
