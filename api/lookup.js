@@ -133,7 +133,7 @@ module.exports = async function handler(req, res) {
       const rows = Object.values(byTag);
 
       res.status(200).json({
-        clans: clans.map((c) => ({ clanTag: c.clanTag, clanName: c.clanName, memberCount: c.memberCount })),
+        clans: clans.map((c) => ({ clanTag: c.clanTag, clanName: c.clanName, memberCount: c.memberCount, weekLabels: c.weekLabels })),
         failedClans,
         totalMembers: rows.length,
         rows,
@@ -164,7 +164,7 @@ module.exports = async function handler(req, res) {
     rows.sort((a, b) => (b.total5k || 0) - (a.total5k || 0));
 
     res.status(200).json({
-      clans: clans.map((c) => ({ clanTag: c.clanTag, clanName: c.clanName, memberCount: c.memberCount })),
+      clans: clans.map((c) => ({ clanTag: c.clanTag, clanName: c.clanName, memberCount: c.memberCount, weekLabels: c.weekLabels })),
       failedClans,
       totalMembers: rows.length,
       rows
