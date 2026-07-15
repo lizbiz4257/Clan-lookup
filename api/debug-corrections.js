@@ -6,7 +6,11 @@
 // beyond confirming whether the fetch itself is working.
 
 module.exports = async function handler(req, res) {
-  const report = { hasGithubRepo: !!process.env.GITHUB_REPO, hasGithubToken: !!process.env.GITHUB_TOKEN };
+  const report = {
+    hasGithubRepo: !!process.env.GITHUB_REPO,
+    githubRepoValue: process.env.GITHUB_REPO || null, // safe to show — just a repo path, not a secret
+    hasGithubToken: !!process.env.GITHUB_TOKEN
+  };
 
   try {
     const resp = await fetch(
@@ -37,3 +41,5 @@ module.exports = async function handler(req, res) {
     res.status(200).json(report);
   }
 }
+
+
