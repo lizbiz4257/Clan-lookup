@@ -1,73 +1,7144 @@
-// api/export-csv.js
-// Same data as /api/lookup, but returned as plain CSV text instead of JSON —
-// built specifically so a Google Sheet can pull it live with a formula like:
-//   =IMPORTDATA("https://your-site.vercel.app/api/export-csv?tags=TAG")
-// No Google login, no service account, no setup on the Sheets side at all.
-// Just paste that formula into any cell and it refreshes automatically
-// whenever the Sheet recalculates.
-//
-// Usage (same query params as /api/lookup):
-//   /api/export-csv?tag=XXXXXXXX
-//   /api/export-csv?tags=TAG1,TAG2,...
-//   /api/export-csv?player=NAME_OR_TAG
-
-function csvEscape(value) {
-  if (value === null || value === undefined) return '';
-  const str = String(value);
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-    return '"' + str.replace(/"/g, '""') + '"';
-  }
-  return str;
-}
-
-function rowsToCsv(rows) {
-  const headers = [
-    'Name', 'Tag', 'Clan', 'In Clan', 'New?', 'Score This Week', 'Cards Played',
-    'Week 1 Score', 'Week 1 Attacks', 'Week 2 Score', 'Week 2 Attacks',
-    'Week 3 Score', 'Week 3 Attacks', 'Week 4 Score', 'Week 4 Attacks',
-    'Week 5 Score', 'Week 5 Attacks',
-    'Total 5k', 'Elo', '5wa', '5kP', '5kG', '5kPPG',
-    'Prior Clan', 'Prior Avg Score', 'Prior Avg Attacks'
-  ];
-
-  const lines = [headers.join(',')];
-
-  rows.forEach((r) => {
-    const w = r.weeks || [];
-    const fields = [
-      r.name, r.tag, r.clanName || '', r.inClan, r.isNew ? 'Yes' : '', r.thisWeekScore, r.thisWeekAttacks
-    ];
-    for (let i = 0; i < 5; i++) {
-      fields.push(w[i] ? w[i].score : '', w[i] ? w[i].attacks : '');
+{
+  "#YRVC9QVJ": {
+    "134-1": {
+      "players": {
+        "#289UJU0R9": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RQUJ88RYG": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#YJRU2": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2VJCL9Y2": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RQQCGVU8P": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RVC2VJ8QC": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#YPYJ0C9Q": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#L09JCPR99": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RLCYYV8VL": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#UU2Q2R9U": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#20PUG8CYJ": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RVG29GL2J": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#28C2202UU": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2QU28UJC": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RG9VPRYV": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#LRCPVGGR": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#Y8Y8YL0RC": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#YVV290UY": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#YQQ80PGP": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#CJJQLL2P": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RQ28CUP9P": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2PR0R8CC": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9JULQ0VJG": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9RY2GR9Y": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#20LPPG0J": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#PY2Y8VPG": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#80QC80PC8": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2V9JJ2QLL": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8YR9J8QLV": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#Y82Y2R8LQ": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#UGR2LPPJG": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9VU80PJU": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#JLGCLPVLV": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9VP9YY9V9": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9UU9QR2J": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#C8QLYCV0G": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2PP9YURVQ": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#U2UJ9GQQ": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9UU9RGPG": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8RGRGCPLJ": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#20P829PCL2": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9JQ8P2YR": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#U0GLV2CP": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2JJRQPPPC": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9GGRPQJQ2": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#V982LJ2G": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#U2Y9PGCPY": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8PUQ8UG8": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#G9PPG8Y": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#GQJGP8U9G": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#VLJQ89P2": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8Q0YPPCVL": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#Y0UJLPP": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#YLC28RR0V": {
+          "d1": {
+            "fame": 200,
+            "attacks": 2
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        }
+      }
+    },
+    "133-5": {
+      "players": {
+        "#2CCYLPJY": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#UU2Q2R9U": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#LRCPVGGR": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#80GGC8JP2": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#9JULQ0YJG": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#VCU2C89QQ": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 450,
+            "attacks": 3
+          },
+          "d4": {
+            "fame": 1100,
+            "attacks": 5
+          }
+        },
+        "#RVG29GL2J": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#JLGCLPVLV": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#28C2202UU": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#8RGRGCPLJ": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 600,
+            "attacks": 4
+          }
+        },
+        "#YVV290UY": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#2PQ2QUUP9": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#U2UJ9GQQ": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#9CU02QPL": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 600,
+            "attacks": 4
+          }
+        },
+        "#2JLJR8PVV": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#P8LCPPQJP": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#YPYJ0C9Q": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#9UU9RGPG": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#9UQJRRPGR": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#U0GLV2CP": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#20PUG8CYJ": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#9QPYY2JG": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#20LPPG0J": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#289UJU0R9": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#2GJPC98CQ": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#JUU9GQY8U": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#9RY2GR9Y": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#9UU9QR2J": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 450,
+            "attacks": 3
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#8PUQ8UG8": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#U8RLCJCP0": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#RLCYYV8VL": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#8Y29VLCPY": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#2QU28UJC": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#9VP9YY9V9": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#9C0UJ89UC": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#L09JCPR99": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#Y82Y2R8LQ": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#RQ28CUP9P": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#RG9VPRYV": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#80QC80PC8": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#YCR9UJRP": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#JRR90228": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#Y0UJLPP": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#RJQUJQJV": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#8YR9J8QLV": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#P92RQRQ": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#RC2298PV": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#CJJQLL2P": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2VJCL9Y2": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2QL89J9CC": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RQVJ08VP9": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2000VC0YPV": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#20V9GPLVQQ": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        }
+      }
+    },
+    "133-4": {
+      "players": {
+        "#RPGCGCLGC": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#Y82Y2R8LQ": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#Y8LG8JYC": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 600,
+            "attacks": 4
+          }
+        },
+        "#CGCYRP0J": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#RPU9RGL": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 600,
+            "attacks": 4
+          }
+        },
+        "#9RY2GR9Y": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 300,
+            "attacks": 3
+          }
+        },
+        "#RQ28CUP9P": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#2QU28UJC": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#9CU02QPL": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#8YRLY2V9G": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#CJJQLL2P": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#U2UJ9GQQ": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#28C2202UU": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 2
+          }
+        },
+        "#VCLUR9LLC": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RL8RP9JJ": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#8PJUCURJ": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#YVV290UY": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#JJG9GVCP9": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 300,
+            "attacks": 3
+          }
+        },
+        "#80QC80PC8": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#JUU9GQY8U": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#RG9VPRYV": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#8RGRGCPLJ": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#V80220U0C": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 450,
+            "attacks": 4
+          }
+        },
+        "#9UU9RGPG": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#PPCUJJCUP": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#9VP9YY9V9": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#JCGVRVGY9": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#YCR9UJRP": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#L09JCPR99": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#28GLV2G8L": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 325,
+            "attacks": 3
+          }
+        },
+        "#UU2Q2R9U": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 300,
+            "attacks": 3
+          }
+        },
+        "#2CCYLPJY": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 300,
+            "attacks": 3
+          }
+        },
+        "#2VJCL9Y2": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 200,
+            "attacks": 2
+          }
+        },
+        "#2YGRQLQJR": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 3
+          }
+        },
+        "#U0GLV2CP": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 200,
+            "attacks": 2
+          }
+        },
+        "#JLGCLPVLV": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#LRCPVGGR": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#YPYJ0C9Q": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#20LPPG0J": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#20PUG8CYJ": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8YGQ2GRJ": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8PUQ8UG8": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#P92RQRQ": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#U8RLCJCP0": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9JULQ0YJG": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9UU9QR2J": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#RGYQ0R0P9": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#9C0UJ89UC": {
+          "d1": {
+            "fame": 100,
+            "attacks": 1
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9GLGYQRY9": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#GYU0U2G08": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#U09LRGUUL": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#PJ9PUPRY0": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 325,
+            "attacks": 3
+          }
+        },
+        "#PGJGGP2Q8": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#Y0VRCL2Y": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        }
+      }
     }
-    fields.push(r.total5k, r.elo, r.fivewa, r.fiveKP, r.fiveKG, r.fiveKPPG, r.priorClanName || '', r.priorAvgScore, r.priorAvgAttacks);
-    lines.push(fields.map(csvEscape).join(','));
-  });
-
-  return lines.join('\n');
-}
-
-module.exports = async function handler(req, res) {
-  try {
-    // Reuses the exact same logic as /api/lookup by calling it internally,
-    // so both endpoints always return identical data — just different formats.
-    const protocol = req.headers['x-forwarded-proto'] || 'https';
-    const host = req.headers.host;
-    const queryString = req.url.split('?')[1] || '';
-    const lookupUrl = protocol + '://' + host + '/api/lookup?' + queryString;
-
-    const resp = await fetch(lookupUrl);
-    const data = await resp.json();
-
-    if (!resp.ok || data.error) {
-      res.status(resp.status).send('Error: ' + (data.error || 'Unknown error'));
-      return;
+  },
+  "#YQJPR2V9": {
+    "134-1": {
+      "players": {
+        "#9V92LPPY": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#2QVPJR88R": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#9LL90L2U": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#C2QCC88JR": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#RL9L0JQG": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#QJG0RQYQ": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#CGQ9LRQRU": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#80GGC8JP2": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#L8J0UCJYJ": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#YQU0029C8": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#PLCJP2L8P": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#RC2298PV": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#V2QVJLYCY": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#2G22GGC9U": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#YLCY8YJJC": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 650,
+            "attacks": 4
+          }
+        },
+        "#8P22UPR0": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#9QPYY2JG": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#8PJUCURJ": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#2L2V0RQVY": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#8L9V92YYC": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 650,
+            "attacks": 4
+          }
+        },
+        "#YQQCUC0R8": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 600,
+            "attacks": 4
+          }
+        },
+        "#2JV8YCRU": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#RQVJ08VP9": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#GPGRYJP9": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#PPL9YL900": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#2Q9UJQ0UP": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#Q8RPY28VU": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#2PQ2QUUP9": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#9C0UJ89UC": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#9YPV2C8V0": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 600,
+            "attacks": 4
+          }
+        },
+        "#P8LCPPQJP": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 650,
+            "attacks": 4
+          }
+        },
+        "#RJQUJQJV": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#VUCR8QUG": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#8G92Q89LR": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#9UQJRRPGR": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#9JVVPVY0V": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#2JLJR8PVV": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 650,
+            "attacks": 4
+          }
+        },
+        "#CRCGYQ9P0": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#8Y29VLCPY": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#2PCPPLYRC": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#PJQUCU80V": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#P92RQRQ": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 650,
+            "attacks": 4
+          }
+        },
+        "#2QL89J9CC": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#VCU2C89QQ": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#8YJCJP2Y": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#JRR90228": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#28JL8C9": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#V80220U0C": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#9882QL8RU": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#889GR9GGR": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 2
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8VPPR09Y9": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#2GJPC98CQ": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 200,
+            "attacks": 1
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#92PCL92VQ": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#2VY8Q9LG9": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#PJ9PUPRY0": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2G0U8V2QJ": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#P0U0LLGYV": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        }
+      }
+    },
+    "133-5": {
+      "players": {
+        "#VLJQ89P2": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#UP8GGUQ2G": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#VLJLJRYGG": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#GYU0U2G08": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#C02RL9G": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#9882QL8RU": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#9V92LPPY": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#CURP9QVYP": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#8PJUCURJ": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#V80220U0C": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 600,
+            "attacks": 4
+          }
+        },
+        "#2CYYU2VRR": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#PPL9YL900": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#CP8P2P2G2": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#8Q0YPPCVL": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#RL9L0JQG": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#9JVVPVY0V": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#RQGRPJP9U": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#9GLGYQRY9": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#U2Y9PGCPY": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#L8J0UCJYJ": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#Q8RPY28VU": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 3
+          }
+        },
+        "#YQQCUC0R8": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 650,
+            "attacks": 4
+          }
+        },
+        "#9YPV2C8V0": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#PJ9PUPRY0": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#VQCCG90CR": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#28GLV2G8L": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#2G22GGC9U": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#2L2V0RQVY": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#Q02J2PJ": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#C2QCC88JR": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#RGYQ0R0P9": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 650,
+            "attacks": 4
+          }
+        },
+        "#CGCYRP0J": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#28JL8C9": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#28CLGJC0R": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#GPGRYJP9": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#8L0G09LYU": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#8YJCJP2Y": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#U09LRGUUL": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#8L9V92YYC": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#Q8GQ9202Y": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#PRV8RQ2PC": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 600,
+            "attacks": 4
+          }
+        },
+        "#2JV8YCRU": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#PLCJP2L8P": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#2Q9UJQ0UP": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 300,
+            "attacks": 3
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 5
+          }
+        },
+        "#2PCPPLYRC": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#PJQUCU80V": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#9YQ99JR0J": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#889GR9GGR": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#8YR9J8QLV": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#2VY8Q9LG9": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2LQ0288QP": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#CRCGYQ9P0": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#QPQPCLUP": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9PLJLGPV": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 200,
+            "attacks": 2
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#YQU0029C8": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        }
+      }
+    },
+    "133-4": {
+      "players": {
+        "#80GGC8JP2": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#C2QCC88JR": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#RL9L0JQG": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#CRCGYQ9P0": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#VQCCG90CR": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#Q8RPY28VU": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 650,
+            "attacks": 4
+          }
+        },
+        "#JRQP2VQCC": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#2VY8Q9LG9": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#9UQJRRPGR": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#PJQUCU80V": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#C8GY0C9G2": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#28JL8C9": {
+          "d1": {
+            "fame": 750,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#YJVVR09JG": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#8YJCJP2Y": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 500,
+            "attacks": 4
+          }
+        },
+        "#9JVVPVY0V": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#9QPYY2JG": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#L8J0UCJYJ": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 450,
+            "attacks": 3
+          }
+        },
+        "#J98LL9CU": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#QJG0RQYQ": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#CGQ9LRQRU": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#8Y29VLCPY": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#Y8P2QYCVG": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#2JV8YCRU": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#GPGRYJP9": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#2Q9UJQ0UP": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#9YPV2C8V0": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RVG29GL2J": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#YQQCUC0R8": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RGQCL2C9C": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#P8LCPPQJP": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#VCU2C89QQ": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#RLCYYV8VL": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#QPQPCLUP": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#Y0UJLPP": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#RC2298PV": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 100,
+            "attacks": 1
+          }
+        },
+        "#2JLJR8PVV": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#PRV8RQ2PC": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#2GJPC98CQ": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 100,
+            "attacks": 1
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 550,
+            "attacks": 4
+          }
+        },
+        "#G0QQUGY": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2PQ2QUUP9": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#JRR90228": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#2QL89J9CC": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 700,
+            "attacks": 4
+          }
+        },
+        "#2PCPPLYRC": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#2G22GGC9U": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9PLJLGPV": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 900,
+            "attacks": 4
+          }
+        },
+        "#9VUGLQ0YP": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#RJQUJQJV": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8YR9J8QLV": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#UYUGGU": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2QVPJR88R": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#VLJQ89P2": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#G9J0RY9JL": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9882QL8RU": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8P22UPR0": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RGYQ0R0P9": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#PJ9PUPRY0": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#VUCR8QUG": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#CP8P2P2G2": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#CU0Y9LU09": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#C9R0VCULJ": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#P0RPVVV9L": {
+          "d1": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#YGQQQLRJ9": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        }
+      }
+    },
+    "133-3": {
+      "players": {
+        "#2Q9UJQ0UP": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#UYUGGU": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#2GJPC98CQ": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 200,
+            "attacks": 1
+          }
+        },
+        "#C8GY0C9G2": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#9VG8P2LPY": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 650,
+            "attacks": 4
+          }
+        },
+        "#PRV8RQ2PC": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2LQ0288QP": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#28CLGJC0R": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#PPL9YL900": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#VLJQ89P2": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#CGCYRP0J": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 825,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#C2QCC88JR": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#JRQP2VQCC": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 200,
+            "attacks": 1
+          }
+        },
+        "#9QPYY2JG": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#CRCGYQ9P0": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#VQCCG90CR": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9PLJLGPV": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 800,
+            "attacks": 4
+          }
+        },
+        "#2JLJR8PVV": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#ULVP8GRR0": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8Y29VLCPY": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#QPQPCLUP": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#GJYJVLY29": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 725,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#J98LL9CU": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 200,
+            "attacks": 1
+          }
+        },
+        "#8L0G09LYU": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#PJQUCU80V": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RLCYYV8VL": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#80GGC8JP2": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9VUGLQ0YP": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9YPV2C8V0": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#P0RPVVV9L": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#P8LCPPQJP": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#PLCJP2L8P": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9UQJRRPGR": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2PQ2QUUP9": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#QJG0RQYQ": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2PCPPLYRC": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 400,
+            "attacks": 4
+          }
+        },
+        "#JRR90228": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#G0QQUGY": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8YR9J8QLV": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RJQUJQJV": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2VY8Q9LG9": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2QL89J9CC": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#R82LQPUG": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RQGRPJP9U": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9882QL8RU": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#2G22GGC9U": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#VUCR8QUG": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RC2298PV": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 200,
+            "attacks": 2
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#YJVVR09JG": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#V80220U0C": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#28GLV2G8L": {
+          "d1": {
+            "fame": 900,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#28JL8C9": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 825,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#U09LRGUUL": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#L8J0UCJYJ": {
+          "d1": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#P2JGJGCQQ": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 650,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8Q0YPPCVL": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#JRRPP9GP": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#9U0LVP08J": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#U2Y9PGCPY": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 400,
+            "attacks": 4
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#RGYQ0R0P9": {
+          "d1": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        }
+      }
     }
-
-    const csv = rowsToCsv(data.rows || []);
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.status(200).send(csv);
-  } catch (err) {
-    res.status(500).send('Error: ' + err.message);
   }
 }
