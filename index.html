@@ -300,11 +300,15 @@
 
     function renderTable(data, resultsEl, dataVarName) {
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
+      const labels = (data.clans && data.clans[0] && data.clans[0].weekLabels) || [];
+      const wkHeader = (i) => labels[i] || ('Wk' + (i + 1));
       html += '<tr><th>Name</th><th>Tag</th><th>Clan</th><th>In Clan</th><th>New?</th>' +
         '<th>Score This Week</th><th>Cards Played</th>' +
-        '<th>Wk1 Score</th><th>Wk1 Atk</th><th>Wk2 Score</th><th>Wk2 Atk</th>' +
-        '<th>Wk3 Score</th><th>Wk3 Atk</th><th>Wk4 Score</th><th>Wk4 Atk</th>' +
-        '<th>Wk5 Score</th><th>Wk5 Atk</th>' +
+        '<th>' + wkHeader(0) + ' Score</th><th>' + wkHeader(0) + ' Atk</th>' +
+        '<th>' + wkHeader(1) + ' Score</th><th>' + wkHeader(1) + ' Atk</th>' +
+        '<th>' + wkHeader(2) + ' Score</th><th>' + wkHeader(2) + ' Atk</th>' +
+        '<th>' + wkHeader(3) + ' Score</th><th>' + wkHeader(3) + ' Atk</th>' +
+        '<th>' + wkHeader(4) + ' Score</th><th>' + wkHeader(4) + ' Atk</th>' +
         '<th>Total 5k</th><th>Elo</th><th>5wa</th>' +
         '<th>5kP</th><th>5kG</th><th>5kPPG</th>' +
         '<th>Prior Clan</th><th>Prior Avg Score</th><th>Prior Avg Attacks</th>' +
@@ -322,9 +326,8 @@
           '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>';
         for (let i = 0; i < 5; i++) {
           const wk = w[i];
-          const l2wMark = wk && wk.isL2W ? ' (L2W)' : '';
           const priorMark = wk && wk.fromPriorClan ? ' *' : '';
-          html += '<td>' + (wk ? wk.score + l2wMark + priorMark : '–') + '</td>' + '<td>' + (wk ? wk.attacks : '–') + '</td>';
+          html += '<td>' + (wk ? wk.score + priorMark : '–') + '</td>' + '<td>' + (wk ? wk.attacks : '–') + '</td>';
         }
         html += '<td>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
           '<td>' + (r.elo == null ? '–' : r.elo) + '</td>' +
@@ -375,7 +378,7 @@
         const row = [r.name, r.tag, r.clanName || '', r.inClan, r.isNew ? 'Yes' : '', r.thisWeekScore, r.thisWeekAttacks];
         for (let i = 0; i < 5; i++) {
           const wk = w[i];
-          row.push(wk ? (wk.score + (wk.isL2W ? ' (L2W)' : '')) : null, wk ? wk.attacks : null);
+          row.push(wk ? wk.score : null, wk ? wk.attacks : null);
         }
         row.push(r.total5k, r.elo, r.fivewa, r.fiveKP, r.fiveKG, r.fiveKPPG, r.priorClanName || '', r.priorAvgScore, r.priorAvgAttacks);
         return row;
