@@ -1,10 +1,17 @@
 // api/daily-snapshot.js
 // Runs automatically once a day (see vercel.json, 5:30pm Eastern, Thu-Sun).
-// Captures each TKO and !Baked! 2.0 player's cumulative war fame, diffs it
-// against yesterday's stored total to get "today's" contribution, and
-// writes it directly into data/day-corrections.json — the SAME file and
-// format used for the manually-supplied weeks, so everything lives in one
-// place automatically from here on. No more manual screenshots needed.
+// Captures each tracked clan's players' cumulative war fame, diffs it against
+// yesterday's stored total to get "today's" contribution, and writes it
+// directly into data/day-corrections.json — the SAME file and format used for
+// the manually-supplied weeks, so everything lives in one place automatically
+// from here on. No more manual screenshots needed.
+//
+// TRACKED CLANS: Team Knockouts, !Baked! 2.0, !Baked! 1.0, !Baked! 1.5,
+// !Baked! 3.0 (5k + 4k + Bak3). Add or remove clans by editing TRACKED_TAGS
+// below — nothing else needs to change.
+//
+// RETENTION: only the most recent MAX_WEEKS_TO_KEEP (10) weeks are kept per
+// clan; older weeks are pruned automatically on each run.
 //
 // How it figures out which day (D1/D2/D3/D4) it's writing: it just counts
 // how many times it's successfully captured within the current week
@@ -21,8 +28,20 @@
 
 const { royaleApiGet } = require('../lib/clanData');
 
-const TRACKED_TAGS = ['#YRVC9QVJ', '#YQJPR2V9']; // !Baked! 2.0, Team Knockouts
+const TRACKED_TAGS = [
+  '#YRVC9QVJ', // !Baked! 2.0
+  '#YQJPR2V9', // Team Knockouts (TKO)
+  '#GURCRRY9', // !Baked! 1.0
+  '#LUCQVPRV', // !Baked! 1.5
+  '#QJU8P80C'  // !Baked! 3.0
+];
+
 const FILE_PATH = 'data/day-corrections.json';
+
+// Keep only the most recent N weeks per clan; older weeks are removed on each
+// run so the file doesn't grow forever. Raise this if you ever want more
+// history retained.
+const MAX_WEEKS_TO_KEEP = 10;
 
 async function githubGetFile() {
   const resp = await fetch('https://api.github.com/repos/' + process.env.GITHUB_REPO + '/contents/' + FILE_PATH, {
@@ -31,14 +50,12 @@ async function githubGetFile() {
       Accept: 'application/vnd.github+json'
     }
   });
-
   if (resp.status === 404) {
     return { data: {}, sha: null };
   }
   if (!resp.ok) {
     throw new Error('GitHub read error ' + resp.status + ': ' + (await resp.text()));
   }
-
   const json = await resp.json();
   const decoded = Buffer.from(json.content, 'base64').toString('utf-8');
   return { data: JSON.parse(decoded), sha: json.sha };
@@ -48,7 +65,6 @@ async function githubPutFile(data, sha, message) {
   const content = Buffer.from(JSON.stringify(data, null, 2)).toString('base64');
   const body = { message, content };
   if (sha) body.sha = sha;
-
   const resp = await fetch('https://api.github.com/repos/' + process.env.GITHUB_REPO + '/contents/' + FILE_PATH, {
     method: 'PUT',
     headers: {
@@ -57,7 +73,6 @@ async function githubPutFile(data, sha, message) {
     },
     body: JSON.stringify(body)
   });
-
   if (!resp.ok) {
     throw new Error('GitHub write error ' + resp.status + ': ' + (await resp.text()));
   }
@@ -84,14 +99,12 @@ module.exports = async function handler(req, res) {
   const easternNow = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false });
   const [easternHour, easternMinute] = easternNow.split(':').map(Number);
   const isTargetTime = easternHour === 17 && easternMinute >= 25 && easternMinute <= 35;
-
   if (!isTargetTime && !req.query.force) {
     res.status(200).json({ message: 'Skipped — not the target local time (currently ' + easternNow + ' Eastern).' });
     return;
   }
 
   const results = [];
-
   try {
     const { data, sha: initialSha } = await githubGetFile();
     let sha = initialSha;
@@ -105,7 +118,6 @@ module.exports = async function handler(req, res) {
         if (!data[tag]) data[tag] = {};
         if (!data._meta) data._meta = {};
         if (!data._meta[tag]) data._meta[tag] = { baseline: {}, currentWeekLabel: null, dayCount: 0 };
-
         const meta = data._meta[tag];
 
         // New week started — reset baseline and day counter
@@ -114,16 +126,13 @@ module.exports = async function handler(req, res) {
           meta.currentWeekLabel = weekLabel;
           meta.dayCount = 0;
         }
-
         meta.dayCount = Math.min(meta.dayCount + 1, 4); // cap at D4
         const dayKey = 'd' + meta.dayCount;
 
         if (!data[tag][weekLabel]) data[tag][weekLabel] = { players: {} };
-
         participants.forEach((p) => {
           const prevFame = meta.baseline[p.tag] || 0;
           const todayFame = p.fame - prevFame;
-
           if (!data[tag][weekLabel].players[p.tag]) {
             data[tag][weekLabel].players[p.tag] = {
               d1: { fame: 0, attacks: 0 }, d2: { fame: 0, attacks: 0 },
@@ -139,6 +148,19 @@ module.exports = async function handler(req, res) {
         results.push(tag + ': FAILED — ' + err.message);
       }
     }
+
+    // Prune old weeks — keep only the most recent MAX_WEEKS_TO_KEEP per clan.
+    // Weeks are stored in the order they were first captured (oldest first),
+    // so the oldest weeks are simply the leading keys and can be dropped.
+    Object.keys(data).forEach((tag) => {
+      if (tag === '_meta') return;
+      const weeks = Object.keys(data[tag]);
+      if (weeks.length > MAX_WEEKS_TO_KEEP) {
+        const removeCount = weeks.length - MAX_WEEKS_TO_KEEP;
+        weeks.slice(0, removeCount).forEach((wk) => { delete data[tag][wk]; });
+        results.push(tag + ': pruned ' + removeCount + ' old week(s), keeping last ' + MAX_WEEKS_TO_KEEP);
+      }
+    });
 
     sha = await githubPutFile(data, sha, 'Automatic daily capture — ' + new Date().toISOString().slice(0, 10));
     res.status(200).json({ message: results.join(' | ') });
