@@ -196,6 +196,7 @@ module.exports = async function handler(req, res) {
               d3: { fame: 0, attacks: 0 }, d4: { fame: 0, attacks: 0 }
             };
           }
+          data[tag][weekLabel].players[p.tag].name = p.name; // for the Daily Scores display; the sheet ignores this field
           data[tag][weekLabel].players[p.tag][dayKey] = { fame: todayFame, attacks: todayAttacks };
           meta.baseline[p.tag] = { fame: p.fame, decks: p.decksUsed };
         });
