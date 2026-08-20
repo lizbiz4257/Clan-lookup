@@ -13,6 +13,12 @@
 // RETENTION: only the most recent MAX_WEEKS_TO_KEEP (10) weeks are kept per
 // clan; older weeks are pruned automatically on each run.
 //
+// MEMBERSHIP / TENURE: each run also records who is in every family clan into
+// data/members-history.json (firstSeen / lastSeen per player), so "how long
+// they've been in the clan" can be computed later. This is data collection
+// only — nothing is shown on the website yet. Tenure can only be measured from
+// when tracking starts (Clash's API has no join date).
+//
 // How it figures out which day (D1/D2/D3/D4) it's writing: it just counts
 // how many times it's successfully captured within the current week
 // (tracked per clan), resetting to 1 whenever the week label changes. Since
@@ -43,8 +49,44 @@ const FILE_PATH = 'data/day-corrections.json';
 // history retained.
 const MAX_WEEKS_TO_KEEP = 10;
 
-async function githubGetFile() {
-  const resp = await fetch('https://api.github.com/repos/' + process.env.GITHUB_REPO + '/contents/' + FILE_PATH, {
+// ---- MEMBERSHIP / TENURE TRACKING ----
+// Separate from scores: each run records who is currently in every family clan,
+// stamping a "firstSeen" date the first time we see a player and updating
+// "lastSeen" each run, so "how long they've been in the clan" can be computed
+// later (days since firstSeen). Clash's API has no join date, so this can only
+// measure tenure from when tracking started. Written to its own file; NOT shown
+// on the website yet — this is just data collection for now.
+const MEMBERS_FILE_PATH = 'data/members-history.json';
+// If we haven't seen a player for more than this many days, treat their return
+// as a NEW stint and reset firstSeen (handles someone leaving and rejoining).
+// Set generously because captures only happen on war days (Thu-Sun), so a normal
+// gap between runs is a few days.
+const MEMBER_GAP_RESET_DAYS = 14;
+// Every clan in the family — membership is tracked for ALL of these.
+const FAMILY_CLANS_FOR_MEMBERS = [
+  { tag: '#YQJPR2V9', name: 'Team Knockouts' },
+  { tag: '#YRVC9QVJ', name: '!Baked! 2.0' },
+  { tag: '#GURCRRY9', name: '!Baked! 1.0' },
+  { tag: '#LUCQVPRV', name: '!Baked! 1.5' },
+  { tag: '#QJU8P80C', name: '!Baked! 3.0' },
+  { tag: '#QVY92JLV', name: 'Baked 3.5' },
+  { tag: '#GQ20UQR8', name: 'Baked 4.0' },
+  { tag: '#GY0QQGYY', name: 'Just Peachy' },
+  { tag: '#L0PQ2ULQ', name: 'Dudes Reunited' },
+  { tag: '#G9LRRP82', name: '!Baked! 2.5' },
+  { tag: '#RYJ2V8V2', name: 'Team Lockouts' },
+  { tag: '#QLUUVQ',   name: 'BBN' },
+  { tag: '#QC2LY9CY', name: '!Baked! Retired' }
+];
+
+function daysBetween(fromYMD, toYMD) {
+  const a = new Date(fromYMD + 'T00:00:00Z');
+  const b = new Date(toYMD + 'T00:00:00Z');
+  return Math.round((b - a) / 86400000);
+}
+
+async function githubGetFile(path) {
+  const resp = await fetch('https://api.github.com/repos/' + process.env.GITHUB_REPO + '/contents/' + path, {
     headers: {
       Authorization: 'token ' + process.env.GITHUB_TOKEN,
       Accept: 'application/vnd.github+json'
@@ -61,11 +103,11 @@ async function githubGetFile() {
   return { data: JSON.parse(decoded), sha: json.sha };
 }
 
-async function githubPutFile(data, sha, message) {
+async function githubPutFile(path, data, sha, message) {
   const content = Buffer.from(JSON.stringify(data, null, 2)).toString('base64');
   const body = { message, content };
   if (sha) body.sha = sha;
-  const resp = await fetch('https://api.github.com/repos/' + process.env.GITHUB_REPO + '/contents/' + FILE_PATH, {
+  const resp = await fetch('https://api.github.com/repos/' + process.env.GITHUB_REPO + '/contents/' + path, {
     method: 'PUT',
     headers: {
       Authorization: 'token ' + process.env.GITHUB_TOKEN,
@@ -115,7 +157,7 @@ module.exports = async function handler(req, res) {
 
   const results = [];
   try {
-    const { data, sha: initialSha } = await githubGetFile();
+    const { data, sha: initialSha } = await githubGetFile(FILE_PATH);
     let sha = initialSha;
 
     for (const tag of TRACKED_TAGS) {
@@ -177,7 +219,40 @@ module.exports = async function handler(req, res) {
       }
     });
 
-    sha = await githubPutFile(data, sha, 'Automatic daily capture — ' + new Date().toISOString().slice(0, 10));
+    sha = await githubPutFile(FILE_PATH, data, sha, 'Automatic daily capture — ' + new Date().toISOString().slice(0, 10));
+
+    // ---- MEMBERSHIP / TENURE SNAPSHOT (all family clans) ----
+    // Recorded to its own file. Not shown on the website yet — collection only.
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: members, sha: membersSha } = await githubGetFile(MEMBERS_FILE_PATH);
+      for (const clan of FAMILY_CLANS_FOR_MEMBERS) {
+        try {
+          const info = await royaleApiGet('/clans/' + encodeURIComponent(clan.tag));
+          const list = info.memberList || [];
+          if (!members[clan.tag]) members[clan.tag] = { name: clan.name, members: {} };
+          members[clan.tag].name = clan.name;
+          const rec = members[clan.tag].members;
+          list.forEach((m) => {
+            const existing = rec[m.tag];
+            let firstSeen = today;
+            if (existing && existing.firstSeen) {
+              const gap = daysBetween(existing.lastSeen || existing.firstSeen, today);
+              // Long gap since we last saw them -> treat as a fresh stint.
+              firstSeen = (gap > MEMBER_GAP_RESET_DAYS) ? today : existing.firstSeen;
+            }
+            rec[m.tag] = { name: m.name, firstSeen: firstSeen, lastSeen: today };
+          });
+          results.push(clan.tag + ' members: ' + list.length + ' recorded');
+        } catch (err) {
+          results.push(clan.tag + ' members: FAILED — ' + err.message);
+        }
+      }
+      await githubPutFile(MEMBERS_FILE_PATH, members, membersSha, 'Daily member snapshot — ' + today);
+    } catch (err) {
+      results.push('member tracking FAILED — ' + err.message);
+    }
+
     res.status(200).json({ message: results.join(' | ') });
   } catch (err) {
     res.status(500).json({ error: err.message, partial: results });
