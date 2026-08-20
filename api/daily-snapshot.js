@@ -79,13 +79,22 @@ async function githubPutFile(data, sha, message) {
   return (await resp.json()).content.sha;
 }
 
-function weekLabelFromRace(race) {
-  if (race.sectionIndex != null) {
-    // currentriverrace doesn't expose seasonId the same way riverracelog
-    // does — periodIndex/sectionIndex combination approximates the same
-    // "134-1" style label used elsewhere once matched against the log.
-    return (race.periodIndex != null ? race.periodIndex : '?') + '-' + race.sectionIndex;
-  }
+// Produce the SAME "134-1" (seasonId + 1-based section) week label the Google
+// Sheet and the rest of the site use — this is what makes the captured data
+// matchable. currentriverrace does NOT expose seasonId, so we read it from the
+// most recent COMPLETED week in the war log, and if the live section index has
+// wrapped back toward the start, the season has rolled over so we bump it by 1.
+async function currentWeekLabel(tag, currentRace) {
+  const curSection = currentRace.sectionIndex;
+  if (curSection == null) return null;
+  try {
+    const log = await royaleApiGet('/clans/' + encodeURIComponent(tag) + '/riverracelog?limit=1');
+    const last = log.items && log.items[0];
+    if (last && last.seasonId != null && last.sectionIndex != null) {
+      const season = (curSection <= last.sectionIndex) ? last.seasonId + 1 : last.seasonId;
+      return season + '-' + (curSection + 1); // e.g. "134-1", matching the sheet
+    }
+  } catch (e) { /* fall through to the dated fallback below */ }
   return null;
 }
 
@@ -113,7 +122,7 @@ module.exports = async function handler(req, res) {
       try {
         const currentRace = await royaleApiGet('/clans/' + encodeURIComponent(tag) + '/currentriverrace');
         const participants = currentRace.clan.participants || [];
-        const weekLabel = weekLabelFromRace(currentRace) || 'unlabeled-' + new Date().toISOString().slice(0, 10);
+        const weekLabel = (await currentWeekLabel(tag, currentRace)) || 'unlabeled-' + new Date().toISOString().slice(0, 10);
 
         if (!data[tag]) data[tag] = {};
         if (!data._meta) data._meta = {};
@@ -131,16 +140,22 @@ module.exports = async function handler(req, res) {
 
         if (!data[tag][weekLabel]) data[tag][weekLabel] = { players: {} };
         participants.forEach((p) => {
-          const prevFame = meta.baseline[p.tag] || 0;
-          const todayFame = p.fame - prevFame;
+          // Both fame and decksUsed from the API are CUMULATIVE for the week, so
+          // today's contribution is the difference from yesterday's stored total
+          // for BOTH. (Older baselines stored just a fame number; handle either.)
+          const prev = meta.baseline[p.tag];
+          const prevFame  = (prev && typeof prev === 'object' ? prev.fame  : prev) || 0;
+          const prevDecks = (prev && typeof prev === 'object' ? prev.decks : 0)    || 0;
+          const todayFame    = p.fame - prevFame;
+          const todayAttacks = p.decksUsed - prevDecks;
           if (!data[tag][weekLabel].players[p.tag]) {
             data[tag][weekLabel].players[p.tag] = {
               d1: { fame: 0, attacks: 0 }, d2: { fame: 0, attacks: 0 },
               d3: { fame: 0, attacks: 0 }, d4: { fame: 0, attacks: 0 }
             };
           }
-          data[tag][weekLabel].players[p.tag][dayKey] = { fame: todayFame, attacks: p.decksUsed };
-          meta.baseline[p.tag] = p.fame;
+          data[tag][weekLabel].players[p.tag][dayKey] = { fame: todayFame, attacks: todayAttacks };
+          meta.baseline[p.tag] = { fame: p.fame, decks: p.decksUsed };
         });
 
         results.push(tag + ': captured ' + weekLabel + ' ' + dayKey + ' for ' + participants.length + ' players');
