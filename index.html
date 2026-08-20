@@ -70,6 +70,21 @@
       vertical-align: -2px; margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab {
+      flex: 1; width: auto; margin: 0;
+      background: #fff; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    select {
+      width: 100%; padding: 12px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 15px; margin-bottom: 10px; background: #fff;
+    }
+    .fieldlabel { font-size: 12px; color: var(--muted); font-weight: 600; margin: 0 0 4px; }
+    td.num, th.num { text-align: right; }
+    .threecol { font-weight: 700; color: var(--accent-dark); }
   </style>
 </head>
 <body>
@@ -77,6 +92,12 @@
     <h1>Clan Lookup</h1>
     <p class="sub">Search one clan by tag, or pull everyone across all your family clans at once.</p>
 
+    <div class="tabs">
+      <button id="tabbtn-lookup" class="tab active" onclick="showTab('lookup')">Lookup</button>
+      <button id="tabbtn-daily" class="tab" onclick="showTab('daily')">Daily Scores</button>
+    </div>
+
+    <div id="tab-lookup">
     <div class="card">
       <input id="clanTagInput" type="text" placeholder="#XXXXXXX">
       <button onclick="lookupClan()">Look up this clan</button>
@@ -96,6 +117,18 @@
     <div id="clanResults"></div>
     <div id="newMembersResults"></div>
     <div id="playerResults"></div>
+    </div><!-- /tab-lookup -->
+
+    <div id="tab-daily" hidden>
+      <div class="card">
+        <p class="fieldlabel">Clan</p>
+        <select id="dailyClan" onchange="onDailyClanChange()"></select>
+        <p class="fieldlabel">Week</p>
+        <select id="dailyWeek" onchange="renderDaily()"></select>
+        <div id="dailyStatus" style="font-size:13px; margin-top:8px; min-height:16px;"></div>
+      </div>
+      <div id="dailyResults"></div>
+    </div>
   </div>
 
   <script>
@@ -389,6 +422,132 @@
       XLSX.utils.book_append_sheet(wb, ws, 'Clan Data');
       const filename = multiClan ? 'clan-family-lookup.xlsx' : (data.clans[0] ? data.clans[0].clanName.replace(/[^a-z0-9]/gi, '_') + '.xlsx' : 'player-lookup.xlsx');
       XLSX.writeFile(wb, filename);
+    }
+
+    // ---------------- DAILY SCORES TAB ----------------
+    const CLAN_NAMES = {
+      '#YQJPR2V9': 'Team Knockouts', '#YRVC9QVJ': '!Baked! 2.0', '#GURCRRY9': '!Baked! 1.0',
+      '#LUCQVPRV': '!Baked! 1.5', '#QJU8P80C': '!Baked! 3.0', '#QVY92JLV': 'Baked 3.5',
+      '#GQ20UQR8': 'Baked 4.0', '#GY0QQGYY': 'Just Peachy', '#L0PQ2ULQ': 'Dudes Reunited',
+      '#G9LRRP82': '!Baked! 2.5', '#RYJ2V8V2': 'Team Lockouts', '#QLUUVQ': 'BBN',
+      '#QC2LY9CY': '!Baked! Retired'
+    };
+    // Where to read the captured daily data from. Try the site's own copy first,
+    // then fall back to the raw GitHub file (public repo).
+    const DAILY_SOURCES = [
+      '/data/day-corrections.json',
+      'https://raw.githubusercontent.com/lizbiz4257/Clan-lookup/main/data/day-corrections.json'
+    ];
+    let dailyData = null;
+    const dailyNameMaps = {}; // clanTag -> { PLAYERTAG: name } (best-effort, for weeks with no stored name)
+
+    function showTab(name) {
+      document.getElementById('tab-lookup').hidden = (name !== 'lookup');
+      document.getElementById('tab-daily').hidden = (name !== 'daily');
+      document.getElementById('tabbtn-lookup').classList.toggle('active', name === 'lookup');
+      document.getElementById('tabbtn-daily').classList.toggle('active', name === 'daily');
+      if (name === 'daily' && !dailyData) loadDailyData();
+    }
+
+    async function loadDailyData() {
+      const status = document.getElementById('dailyStatus');
+      status.className = 'busy';
+      status.innerHTML = '<span class="spinner"></span>Loading daily data…';
+      let json = null, lastErr = 'no source';
+      for (const src of DAILY_SOURCES) {
+        try {
+          const r = await fetch(src, { cache: 'no-store' });
+          if (r.ok) { json = await r.json(); break; }
+          lastErr = 'HTTP ' + r.status;
+        } catch (e) { lastErr = e.message; }
+      }
+      if (!json) { status.className = 'err'; status.textContent = 'Could not load daily data (' + lastErr + ').'; return; }
+      dailyData = json;
+      const tags = Object.keys(json).filter((t) => t !== '_meta' && json[t] && Object.keys(json[t]).length);
+      const clanSel = document.getElementById('dailyClan');
+      clanSel.innerHTML = tags.map((t) => '<option value="' + t + '">' + (CLAN_NAMES[t] || t) + '</option>').join('');
+      if (!tags.length) {
+        status.className = 'err';
+        status.textContent = 'No daily data captured yet — check back after the tracker has run on a war day.';
+        document.getElementById('dailyWeek').innerHTML = '';
+        document.getElementById('dailyResults').innerHTML = '';
+        return;
+      }
+      status.className = ''; status.textContent = '';
+      onDailyClanChange();
+    }
+
+    // Newest week first. Sort "134-1"/"133-5" by season then section descending;
+    // anything unparseable falls to the end.
+    function dailyWeekCompare(a, b) {
+      const pa = /^(\d+)-(\d+)$/.exec(a), pb = /^(\d+)-(\d+)$/.exec(b);
+      if (pa && pb) { const s = (+pb[1]) - (+pa[1]); return s !== 0 ? s : (+pb[2]) - (+pa[2]); }
+      if (pa) return -1;
+      if (pb) return 1;
+      return a < b ? 1 : -1;
+    }
+
+    async function onDailyClanChange() {
+      const tag = document.getElementById('dailyClan').value;
+      const weeks = Object.keys(dailyData[tag] || {}).sort(dailyWeekCompare);
+      document.getElementById('dailyWeek').innerHTML = weeks.map((w) => '<option value="' + w + '">' + w + '</option>').join('');
+      // Best-effort names for players whose row has no stored name (older weeks).
+      if (!dailyNameMaps[tag]) {
+        try {
+          const r = await fetch('/api/lookup?tags=' + encodeURIComponent(tag));
+          if (r.ok) {
+            const d = await r.json();
+            const m = {};
+            (d.rows || []).forEach((row) => { if (row.tag) m[row.tag.toUpperCase()] = row.name; });
+            dailyNameMaps[tag] = m;
+          }
+        } catch (e) { /* names are optional */ }
+      }
+      renderDaily();
+    }
+
+    function renderDaily() {
+      const tag = document.getElementById('dailyClan').value;
+      const week = document.getElementById('dailyWeek').value;
+      const el = document.getElementById('dailyResults');
+      if (!tag || !week || !dailyData[tag] || !dailyData[tag][week]) { el.innerHTML = ''; return; }
+      const players = dailyData[tag][week].players || {};
+      const nameMap = dailyNameMaps[tag] || {};
+      const fameOf = (p, k) => (p[k] && typeof p[k].fame === 'number') ? p[k].fame : 0;
+      const atkOf = (p, k) => (p[k] && typeof p[k].attacks === 'number') ? p[k].attacks : 0;
+
+      const rows = Object.keys(players).map((ptag) => {
+        const p = players[ptag];
+        const d1 = fameOf(p, 'd1'), d2 = fameOf(p, 'd2'), d3 = fameOf(p, 'd3'), d4 = fameOf(p, 'd4');
+        const three = d1 + d2 + d3, total = three + d4;
+        const attacks = atkOf(p, 'd1') + atkOf(p, 'd2') + atkOf(p, 'd3') + atkOf(p, 'd4');
+        const name = p.name || nameMap[ptag.toUpperCase()] || ptag;
+        return { ptag, name, d1, d2, d3, d4, three, total, attacks };
+      }).sort((x, y) => y.total - x.total);
+
+      let html = '<div class="card"><div style="overflow-x:auto;"><table>';
+      html += '<tr><th>Name</th><th class="num">D1</th><th class="num">D2</th><th class="num">D3</th>' +
+        '<th class="num">D4</th><th class="num">3-Day</th><th class="num">Total</th><th class="num">Attacks</th></tr>';
+      rows.forEach((r) => {
+        const cleanTag = (r.ptag || '').replace('#', '');
+        const nameCell = (r.name === r.ptag)
+          ? r.ptag
+          : '<a href="https://royaleapi.com/player/' + cleanTag + '" target="_blank" style="color:var(--accent); text-decoration:none;">' + r.name + '</a>';
+        html += '<tr>' +
+          '<td>' + nameCell + '</td>' +
+          '<td class="num">' + r.d1 + '</td>' +
+          '<td class="num">' + r.d2 + '</td>' +
+          '<td class="num">' + r.d3 + '</td>' +
+          '<td class="num">' + r.d4 + '</td>' +
+          '<td class="num threecol">' + r.three + '</td>' +
+          '<td class="num">' + r.total + '</td>' +
+          '<td class="num">' + r.attacks + '</td>' +
+          '</tr>';
+      });
+      html += '</table></div>';
+      html += '<p style="color:var(--muted); font-size:12px; margin:10px 0 0;">' + rows.length + ' players · 3-Day = D1+D2+D3 (Day 4 excluded) · Total = all four days.</p>';
+      html += '</div>';
+      el.innerHTML = html;
     }
 
     document.getElementById('clanTagInput').addEventListener('keydown', function (e) {
