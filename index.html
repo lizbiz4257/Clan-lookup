@@ -304,12 +304,12 @@
       const newRows = (lastClanData.rows || []).filter(r => r.isNew);
 
       let html = '<div class="card"><h2 style="font-size:14px; margin:0 0 4px;">New Members (' + newRows.length + ')</h2>';
-      html += '<p style="color:var(--muted); font-size:12px; margin:0 0 10px;">5-week history shown automatically if they came from another family clan. Blank "Prior Clan" means they joined from outside the family — check that clan directly by tag if you know it.</p>';
+      html += '<p style="color:var(--muted); font-size:12px; margin:0 0 10px;">6-week history shown automatically if they came from another family clan. Blank "Prior Clan" means they joined from outside the family — check that clan directly by tag if you know it.</p>';
       html += '<div style="overflow-x:auto;"><table>';
       html += '<tr><th>Name</th><th>Tag</th><th>Clan</th><th>Prior Clan</th>' +
         '<th>Wk1 Score</th><th>Wk1 Atk</th><th>Wk2 Score</th><th>Wk2 Atk</th>' +
         '<th>Wk3 Score</th><th>Wk3 Atk</th><th>Wk4 Score</th><th>Wk4 Atk</th>' +
-        '<th>Wk5 Score</th><th>Wk5 Atk</th>' +
+        '<th>Wk5 Score</th><th>Wk5 Atk</th><th>Wk6 Score</th><th>Wk6 Atk</th>' +
         '<th>Prior Avg Score</th><th>Prior Avg Attacks</th><th>Weeks Tracked</th></tr>';
       newRows.forEach((r) => {
         const w = r.priorWeeks || [];
@@ -318,7 +318,7 @@
           '<td>' + r.tag + '</td>' +
           '<td>' + (r.clanName || '–') + '</td>' +
           '<td>' + (r.priorClanName || '– (outside family)') + '</td>';
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 6; i++) {
           const wk = w[i];
           html += '<td>' + (wk ? wk.score : '–') + '</td>' + '<td>' + (wk ? wk.attacks : '–') + '</td>';
         }
@@ -342,6 +342,7 @@
         '<th>' + wkHeader(2) + ' Score</th><th>' + wkHeader(2) + ' Atk</th>' +
         '<th>' + wkHeader(3) + ' Score</th><th>' + wkHeader(3) + ' Atk</th>' +
         '<th>' + wkHeader(4) + ' Score</th><th>' + wkHeader(4) + ' Atk</th>' +
+        '<th>' + wkHeader(5) + ' Score</th><th>' + wkHeader(5) + ' Atk</th>' +
         '<th>Total 5k</th><th>Elo</th><th>5wa</th>' +
         '<th>5kP</th><th>5kG</th><th>5kPPG</th>' +
         '<th>Prior Clan</th><th>Prior Avg Score</th><th>Prior Avg Attacks</th>' +
@@ -357,7 +358,7 @@
           '<td>' + (r.isNew ? 'Yes' : '–') + '</td>' +
           '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>' +
           '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>';
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 6; i++) {
           const wk = w[i];
           const priorMark = wk && wk.fromPriorClan ? ' *' : '';
           html += '<td>' + (wk ? wk.score + priorMark : '–') + '</td>' + '<td>' + (wk ? wk.attacks : '–') + '</td>';
@@ -403,13 +404,13 @@
       const headers = ['Name', 'Tag', 'Clan', 'In Clan', 'New?', 'Score This Week', 'Cards Played',
         'Week 1 Score', 'Week 1 Attacks', 'Week 2 Score', 'Week 2 Attacks',
         'Week 3 Score', 'Week 3 Attacks', 'Week 4 Score', 'Week 4 Attacks',
-        'Week 5 Score', 'Week 5 Attacks',
+        'Week 5 Score', 'Week 5 Attacks', 'Week 6 Score', 'Week 6 Attacks',
         'Total 5k', 'Elo', '5wa', '5kP', '5kG', '5kPPG', 'Prior Clan', 'Prior Avg Score', 'Prior Avg Attacks'];
 
       const rows = data.rows.map((r) => {
         const w = r.weeks || [];
         const row = [r.name, r.tag, r.clanName || '', r.inClan, r.isNew ? 'Yes' : '', r.thisWeekScore, r.thisWeekAttacks];
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 6; i++) {
           const wk = w[i];
           row.push(wk ? wk.score : null, wk ? wk.attacks : null);
         }
