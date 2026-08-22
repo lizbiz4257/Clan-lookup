@@ -138,22 +138,30 @@ async function githubPutFile(path, data, sha, message) {
   return (await resp.json()).content.sha;
 }
 
+// Fetches the one piece of history needed to label the current week (split
+// out from the label calculation itself so it can be kicked off in PARALLEL
+// with the currentriverrace call in the main loop below, instead of after it —
+// the two calls don't depend on each other, only the final calculation does).
+async function fetchLastRace(tag) {
+  try {
+    return await royaleApiGet('/clans/' + encodeURIComponent(tag) + '/riverracelog?limit=1');
+  } catch (e) {
+    return null; // fall through to the dated fallback in computeWeekLabel
+  }
+}
+
 // Produce the SAME "134-1" (seasonId + 1-based section) week label the Google
 // Sheet and the rest of the site use — this is what makes the captured data
 // matchable. currentriverrace does NOT expose seasonId, so we read it from the
 // most recent COMPLETED week in the war log, and if the live section index has
 // wrapped back toward the start, the season has rolled over so we bump it by 1.
-async function currentWeekLabel(tag, currentRace) {
-  const curSection = currentRace.sectionIndex;
+function computeWeekLabel(curSection, log) {
   if (curSection == null) return null;
-  try {
-    const log = await royaleApiGet('/clans/' + encodeURIComponent(tag) + '/riverracelog?limit=1');
-    const last = log.items && log.items[0];
-    if (last && last.seasonId != null && last.sectionIndex != null) {
-      const season = (curSection <= last.sectionIndex) ? last.seasonId + 1 : last.seasonId;
-      return season + '-' + (curSection + 1); // e.g. "134-1", matching the sheet
-    }
-  } catch (e) { /* fall through to the dated fallback below */ }
+  const last = log && log.items && log.items[0];
+  if (last && last.seasonId != null && last.sectionIndex != null) {
+    const season = (curSection <= last.sectionIndex) ? last.seasonId + 1 : last.seasonId;
+    return season + '-' + (curSection + 1); // e.g. "134-1", matching the sheet
+  }
   return null;
 }
 
@@ -206,11 +214,25 @@ module.exports = async function handler(req, res) {
     const { data, sha: initialSha } = await githubGetFile(FILE_PATH);
     let sha = initialSha;
 
-    for (const tag of TRACKED_TAGS) {
+    // Process all tracked clans CONCURRENTLY rather than one at a time. Each
+    // clan needs 2 external calls (currentriverrace + a 1-item riverracelog for
+    // the week label); doing 5 clans sequentially meant ~10 round trips back to
+    // back before a single byte got written back to GitHub, which on a
+    // Vercel Hobby-plan function (short default execution time limit) risks the
+    // whole run being killed mid-way — silently, with NOTHING committed, since
+    // the write only happens once at the very end. Running clans in parallel
+    // (and, within a clan, its 2 calls in parallel) cuts the wall-clock time to
+    // roughly that of the SLOWEST single call instead of the sum of all of them.
+    // Each clan only ever touches its own slice of `data`/`data._meta`, so
+    // there's no shared-state race between clans running concurrently.
+    await Promise.all(TRACKED_TAGS.map(async (tag) => {
       try {
-        const currentRace = await royaleApiGet('/clans/' + encodeURIComponent(tag) + '/currentriverrace');
+        const [currentRace, lastRaceLog] = await Promise.all([
+          royaleApiGet('/clans/' + encodeURIComponent(tag) + '/currentriverrace'),
+          fetchLastRace(tag)
+        ]);
         const participants = currentRace.clan.participants || [];
-        const weekLabel = (await currentWeekLabel(tag, currentRace)) || 'unlabeled-' + new Date().toISOString().slice(0, 10);
+        const weekLabel = computeWeekLabel(currentRace.sectionIndex, lastRaceLog) || 'unlabeled-' + new Date().toISOString().slice(0, 10);
 
         if (!data[tag]) data[tag] = {};
         if (!data._meta) data._meta = {};
@@ -235,7 +257,7 @@ module.exports = async function handler(req, res) {
           // write next week's freshly-reset numbers into this week's D4.
           if (meta.currentWeekLabel !== weekLabel) {
             results.push(tag + ': race already rolled (live ' + weekLabel + ' vs filling ' + (meta.currentWeekLabel || 'none') + ') — D4 skipped to avoid corruption');
-            continue;
+            return; // was `continue` under the old sequential for-loop; this now runs inside Promise.all(map(...))
           }
         }
         const targetWeek = meta.currentWeekLabel;
@@ -244,7 +266,7 @@ module.exports = async function handler(req, res) {
         // so a second (backup) cron fire doesn't double-count. ?force overrides.
         if (meta.lastCaptureDate === easternDate && !req.query.force) {
           results.push(tag + ': already captured today (' + easternDate + '), skipped');
-          continue;
+          return; // was `continue` under the old sequential for-loop; this now runs inside Promise.all(map(...))
         }
 
         const dayKey = 'd' + warDay; // Fri->d1, Sat->d2, Sun->d3, Mon->d4
@@ -275,7 +297,7 @@ module.exports = async function handler(req, res) {
       } catch (err) {
         results.push(tag + ': FAILED — ' + err.message);
       }
-    }
+    }));
 
     // Prune old weeks — keep only the most recent MAX_WEEKS_TO_KEEP per clan.
     // Weeks are stored in the order they were first captured (oldest first),
@@ -297,7 +319,11 @@ module.exports = async function handler(req, res) {
     try {
       const today = new Date().toISOString().slice(0, 10);
       const { data: members, sha: membersSha } = await githubGetFile(MEMBERS_FILE_PATH);
-      for (const clan of FAMILY_CLANS_FOR_MEMBERS) {
+      // Same reasoning as the tracked-clan loop above: 13 family clans hit
+      // sequentially was 13 more back-to-back round trips added onto the same
+      // single function invocation. Each clan only touches its own
+      // members[clan.tag] entry, so running them concurrently is safe.
+      await Promise.all(FAMILY_CLANS_FOR_MEMBERS.map(async (clan) => {
         try {
           const info = await royaleApiGet('/clans/' + encodeURIComponent(clan.tag));
           const list = info.memberList || [];
@@ -318,7 +344,7 @@ module.exports = async function handler(req, res) {
         } catch (err) {
           results.push(clan.tag + ' members: FAILED — ' + err.message);
         }
-      }
+      }));
       await githubPutFile(MEMBERS_FILE_PATH, members, membersSha, 'Daily member snapshot — ' + today);
     } catch (err) {
       results.push('member tracking FAILED — ' + err.message);
