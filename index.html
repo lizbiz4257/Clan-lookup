@@ -520,10 +520,11 @@
       const rows = Object.keys(players).map((ptag) => {
         const p = players[ptag];
         const d1 = fameOf(p, 'd1'), d2 = fameOf(p, 'd2'), d3 = fameOf(p, 'd3'), d4 = fameOf(p, 'd4');
+        const a1 = atkOf(p, 'd1'), a2 = atkOf(p, 'd2'), a3 = atkOf(p, 'd3'), a4 = atkOf(p, 'd4');
         const three = d1 + d2 + d3, total = three + d4;
-        const attacks = atkOf(p, 'd1') + atkOf(p, 'd2') + atkOf(p, 'd3') + atkOf(p, 'd4');
+        const attacks = a1 + a2 + a3 + a4;
         const name = p.name || nameMap[ptag.toUpperCase()] || ptag;
-        return { ptag, name, d1, d2, d3, d4, three, total, attacks };
+        return { ptag, name, d1, d2, d3, d4, a1, a2, a3, a4, three, total, attacks };
       })
         // Skip players with zero fame AND zero attacks across all four days —
         // these are stale leftovers (most commonly from a messy transition
@@ -536,8 +537,12 @@
         .sort((x, y) => y.total - x.total);
 
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
-      html += '<tr><th>Name</th><th class="num">D1</th><th class="num">D2</th><th class="num">D3</th>' +
-        '<th class="num">D4</th><th class="num">3-Day</th><th class="num">Total</th><th class="num">Attacks</th></tr>';
+      html += '<tr><th>Name</th>' +
+        '<th class="num">D1 Score</th><th class="num">D1 Cards</th>' +
+        '<th class="num">D2 Score</th><th class="num">D2 Cards</th>' +
+        '<th class="num">D3 Score</th><th class="num">D3 Cards</th>' +
+        '<th class="num">D4 Score</th><th class="num">D4 Cards</th>' +
+        '<th class="num">3-Day</th><th class="num">Total</th><th class="num">Total Cards</th></tr>';
       rows.forEach((r) => {
         const cleanTag = (r.ptag || '').replace('#', '');
         const nameCell = (r.name === r.ptag)
@@ -545,17 +550,17 @@
           : '<a href="https://royaleapi.com/player/' + cleanTag + '" target="_blank" style="color:var(--accent); text-decoration:none;">' + r.name + '</a>';
         html += '<tr>' +
           '<td>' + nameCell + '</td>' +
-          '<td class="num">' + r.d1 + '</td>' +
-          '<td class="num">' + r.d2 + '</td>' +
-          '<td class="num">' + r.d3 + '</td>' +
-          '<td class="num">' + r.d4 + '</td>' +
+          '<td class="num">' + r.d1 + '</td><td class="num">' + r.a1 + '</td>' +
+          '<td class="num">' + r.d2 + '</td><td class="num">' + r.a2 + '</td>' +
+          '<td class="num">' + r.d3 + '</td><td class="num">' + r.a3 + '</td>' +
+          '<td class="num">' + r.d4 + '</td><td class="num">' + r.a4 + '</td>' +
           '<td class="num threecol">' + r.three + '</td>' +
           '<td class="num">' + r.total + '</td>' +
           '<td class="num">' + r.attacks + '</td>' +
           '</tr>';
       });
       html += '</table></div>';
-      html += '<p style="color:var(--muted); font-size:12px; margin:10px 0 0;">' + rows.length + ' players · 3-Day = D1+D2+D3 (Day 4 excluded) · Total = all four days.</p>';
+      html += '<p style="color:var(--muted); font-size:12px; margin:10px 0 0;">' + rows.length + ' players · Cards = attacks used that day (max 4) · 3-Day = D1+D2+D3 score (Day 4 excluded) · Total = all four days.</p>';
       html += '</div>';
       el.innerHTML = html;
     }
