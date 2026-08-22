@@ -19,16 +19,28 @@
 // only — nothing is shown on the website yet. Tenure can only be measured from
 // when tracking starts (Clash's API has no join date).
 //
-// How it figures out which day (D1/D2/D3/D4) it's writing: it maps the actual
-// Eastern-time WAR DAY to the slot — Thu=D1, Fri=D2, Sat=D3, Sun=D4. This is
-// deterministic, so if a run is ever missed the other days stay in their right
-// slots (the missed day just stays blank) instead of everything shifting.
-// (The old version counted successful runs, so a single missed run silently
-// desynced the whole D1-D4 layout.)
+// WHEN it runs: a war day doesn't close until ~5:30am ET the NEXT morning, so
+// this captures the MORNING AFTER each war day (Fri/Sat/Sun/Mon, ~6:30-7:30am
+// ET) — that's the only time the day's numbers are actually complete. (The old
+// 5:30pm capture only ever grabbed a partial, mid-war day.)
+//
+// How it figures out which day (D1/D2/D3/D4) it's writing: it maps the capture
+// MORNING to the war day that just closed —
+//   Fri morning -> Thu's war day  = D1
+//   Sat morning -> Fri's war day  = D2
+//   Sun morning -> Sat's war day  = D3
+//   Mon morning -> Sun's war day  = D4
+// Mapping by real weekday (not a run counter) means a missed run never shifts
+// the other days — the missed day just stays blank.
 //
 // To avoid double-counting, each clan is captured at most ONCE per Eastern
-// calendar day (tracked via meta.lastCaptureDate). That once-per-day guard —
-// not a tight clock window — is what keeps the backup cron from writing twice.
+// calendar day (meta.lastCaptureDate). That once-per-day guard — not a tight
+// clock window — is what keeps the backup cron from writing twice.
+//
+// D4 caveat: Sunday's war day closes Monday ~5:30am, right around when the live
+// river race rolls to next week. So on the Monday (D4) run we only write if the
+// live race is STILL the week we've been filling; if it has already rolled we
+// skip D4 rather than corrupt the week with next week's reset numbers.
 //
 // SETUP REQUIRED (same as before):
 //   1. On GitHub: Settings -> Developer settings -> Personal access tokens
@@ -152,9 +164,9 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  // Figure out the Eastern date, weekday, and hour in one shot. We use the
-  // weekday to pick the war-day slot (Thu=D1..Sun=D4) and the date to make sure
-  // we only capture once per day per clan.
+  // Figure out the Eastern date, weekday, and hour in one shot. The weekday
+  // picks which just-closed war day we're recording; the date is the once-per-
+  // day guard key.
   const eParts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York', weekday: 'short', hour: '2-digit', hour12: false,
     year: 'numeric', month: '2-digit', day: '2-digit'
@@ -164,27 +176,28 @@ module.exports = async function handler(req, res) {
   const easternWeekday = e.weekday;                          // e.g. "Sat"
   const easternHour = Number(e.hour);                        // 0-23
 
-  // War days are Thu-Sun -> D1-D4. Mapping the slot to the real weekday (instead
-  // of counting runs) means a skipped day never shifts the others.
-  const WAR_DAY_SLOT = { Thu: 1, Fri: 2, Sat: 3, Sun: 4 };
+  // Each war day closes ~5:30am ET the next morning, so we capture the MORNING
+  // AFTER: Fri->D1 (Thu's war day), Sat->D2, Sun->D3, Mon->D4. Mapping the slot
+  // to the real weekday (instead of counting runs) means a skipped day never
+  // shifts the others.
+  const WAR_DAY_SLOT = { Fri: 1, Sat: 2, Sun: 3, Mon: 4 };
   const warDay = WAR_DAY_SLOT[easternWeekday] || null;
 
-  // Not a war day at all -> nothing to capture, even with ?force (there's no
-  // valid slot to write into).
+  // Not a capture morning -> nothing to record, even with ?force (no valid slot).
   if (!warDay) {
-    res.status(200).json({ message: 'Skipped — ' + easternWeekday + ' is not a war day (Thu-Sun only).' });
+    res.status(200).json({ message: 'Skipped — ' + easternWeekday + ' is not a capture morning (Fri-Mon only).' });
     return;
   }
 
-  // Only capture in the late-afternoon window (16:00-19:59 ET). This is
-  // deliberately WIDE: Vercel's Hobby-plan cron fires somewhere within its
-  // scheduled hour, not on the exact minute, so the old 17:25-17:35 check was
-  // silently skipping whole days when the cron landed a few minutes off. The
-  // real "don't capture twice" protection is the once-per-day guard below, not
-  // this window. ?force bypasses the window for manual/backfill runs.
-  const inWindow = easternHour >= 16 && easternHour <= 19;
+  // Only capture in the early-morning window (06:00-11:59 ET), AFTER the ~5:30am
+  // war-day close. It's deliberately WIDE: Vercel's Hobby-plan cron fires
+  // somewhere within its scheduled hour (and can be delayed), not on the exact
+  // minute, so a tight window silently drops whole days. The real "don't capture
+  // twice" protection is the once-per-day guard below, not this window. ?force
+  // bypasses the window for manual/backfill runs.
+  const inWindow = easternHour >= 6 && easternHour <= 11;
   if (!inWindow && !req.query.force) {
-    res.status(200).json({ message: 'Skipped — outside the capture window (currently ' + easternWeekday + ' ' + easternHour + ':xx Eastern; window is 16:00-19:59).' });
+    res.status(200).json({ message: 'Skipped — outside the capture window (currently ' + easternWeekday + ' ' + easternHour + ':xx Eastern; window is 06:00-11:59).' });
     return;
   }
 
@@ -204,12 +217,28 @@ module.exports = async function handler(req, res) {
         if (!data._meta[tag]) data._meta[tag] = { baseline: {}, currentWeekLabel: null, lastCaptureDate: null };
         const meta = data._meta[tag];
 
-        // New week started — reset baseline and the "captured today" marker.
-        if (meta.currentWeekLabel !== weekLabel) {
-          meta.baseline = {};
-          meta.currentWeekLabel = weekLabel;
-          meta.lastCaptureDate = null;
+        // Decide which week this capture belongs to.
+        if (warDay <= 3) {
+          // Fri/Sat/Sun mornings: the war is still ongoing, so the live race IS
+          // this week. Start a fresh cycle (reset baseline) the first time we see
+          // a new week — this also recovers gracefully if an earlier day was
+          // missed (that slot just stays blank; the running totals stay right).
+          if (meta.currentWeekLabel !== weekLabel) {
+            meta.baseline = {};
+            meta.currentWeekLabel = weekLabel;
+            meta.lastCaptureDate = null;
+          }
+        } else {
+          // D4 (Monday), AFTER Sunday's war day closes — the live race has often
+          // already rolled to next week by now. Only record D4 if the live race
+          // is STILL the week we've been filling; otherwise skip so we never
+          // write next week's freshly-reset numbers into this week's D4.
+          if (meta.currentWeekLabel !== weekLabel) {
+            results.push(tag + ': race already rolled (live ' + weekLabel + ' vs filling ' + (meta.currentWeekLabel || 'none') + ') — D4 skipped to avoid corruption');
+            continue;
+          }
         }
+        const targetWeek = meta.currentWeekLabel;
 
         // Once-per-day guard: if this clan was already captured today, skip it
         // so a second (backup) cron fire doesn't double-count. ?force overrides.
@@ -218,9 +247,9 @@ module.exports = async function handler(req, res) {
           continue;
         }
 
-        const dayKey = 'd' + warDay; // Thu->d1, Fri->d2, Sat->d3, Sun->d4
+        const dayKey = 'd' + warDay; // Fri->d1, Sat->d2, Sun->d3, Mon->d4
 
-        if (!data[tag][weekLabel]) data[tag][weekLabel] = { players: {} };
+        if (!data[tag][targetWeek]) data[tag][targetWeek] = { players: {} };
         participants.forEach((p) => {
           // Both fame and decksUsed from the API are CUMULATIVE for the week, so
           // today's contribution is the difference from yesterday's stored total
@@ -230,19 +259,19 @@ module.exports = async function handler(req, res) {
           const prevDecks = (prev && typeof prev === 'object' ? prev.decks : 0)    || 0;
           const todayFame    = p.fame - prevFame;
           const todayAttacks = p.decksUsed - prevDecks;
-          if (!data[tag][weekLabel].players[p.tag]) {
-            data[tag][weekLabel].players[p.tag] = {
+          if (!data[tag][targetWeek].players[p.tag]) {
+            data[tag][targetWeek].players[p.tag] = {
               d1: { fame: 0, attacks: 0 }, d2: { fame: 0, attacks: 0 },
               d3: { fame: 0, attacks: 0 }, d4: { fame: 0, attacks: 0 }
             };
           }
-          data[tag][weekLabel].players[p.tag].name = p.name; // for the Daily Scores display; the sheet ignores this field
-          data[tag][weekLabel].players[p.tag][dayKey] = { fame: todayFame, attacks: todayAttacks };
+          data[tag][targetWeek].players[p.tag].name = p.name; // for the Daily Scores display; the sheet ignores this field
+          data[tag][targetWeek].players[p.tag][dayKey] = { fame: todayFame, attacks: todayAttacks };
           meta.baseline[p.tag] = { fame: p.fame, decks: p.decksUsed };
         });
 
         meta.lastCaptureDate = easternDate; // mark this clan done for today
-        results.push(tag + ': captured ' + weekLabel + ' ' + dayKey + ' for ' + participants.length + ' players');
+        results.push(tag + ': captured ' + targetWeek + ' ' + dayKey + ' for ' + participants.length + ' players');
       } catch (err) {
         results.push(tag + ': FAILED — ' + err.message);
       }
