@@ -524,7 +524,16 @@
         const attacks = atkOf(p, 'd1') + atkOf(p, 'd2') + atkOf(p, 'd3') + atkOf(p, 'd4');
         const name = p.name || nameMap[ptag.toUpperCase()] || ptag;
         return { ptag, name, d1, d2, d3, d4, three, total, attacks };
-      }).sort((x, y) => y.total - x.total);
+      })
+        // Skip players with zero fame AND zero attacks across all four days —
+        // these are stale leftovers (most commonly from a messy transition
+        // week where the capture ran multiple times against shifting rosters),
+        // not anyone who actually took part in this week's war. A genuine
+        // current member who simply didn't attack still wouldn't show real
+        // activity anywhere, so this is indistinguishable from clutter and
+        // safe to hide either way.
+        .filter((r) => r.total > 0 || r.attacks > 0)
+        .sort((x, y) => y.total - x.total);
 
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
       html += '<tr><th>Name</th><th class="num">D1</th><th class="num">D2</th><th class="num">D3</th>' +
