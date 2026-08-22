@@ -1,10 +1,12 @@
 <!DOCTYPE html>
+<!-- v2026-08-22c: 6-week history + Daily Scores ghost-row filter + per-day Cards + sortable headers + Download Image button. If you don't see this comment when you view the raw file on GitHub, you have the wrong copy. -->
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Clan Lookup</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     :root {
       --accent: #2563eb;
@@ -507,6 +509,39 @@
       renderDaily();
     }
 
+    // Column definitions for the Daily Scores table: key = field on each row
+    // object, label = header text, type = 'num' (default) or 'text' (name col
+    // sorts alphabetically instead of numerically).
+    const DAILY_COLUMNS = [
+      { key: 'name',    label: 'Name',        type: 'text' },
+      { key: 'd1',      label: 'D1 Score' },
+      { key: 'a1',      label: 'Cards' },
+      { key: 'd2',      label: 'D2 Score' },
+      { key: 'a2',      label: 'Cards' },
+      { key: 'd3',      label: 'D3 Score' },
+      { key: 'a3',      label: 'Cards' },
+      { key: 'd4',      label: 'D4 Score' },
+      { key: 'a4',      label: 'Cards' },
+      { key: 'three',   label: '3-Day' },
+      { key: 'total',   label: 'Total' },
+      { key: 'attacks', label: 'Total Cards' }
+    ];
+    let dailySortKey = 'total';
+    let dailySortDir = -1; // -1 = high-to-low / Z-to-A, 1 = low-to-high / A-to-Z
+    let dailyRowsCache = []; // last-rendered rows, reused by sortDaily() and downloadDailyImage()
+
+    // Clicking a header sorts by that column; clicking the SAME header again
+    // flips the direction, so every column works both high-to-low and back.
+    function sortDaily(key) {
+      if (dailySortKey === key) {
+        dailySortDir = -dailySortDir;
+      } else {
+        dailySortKey = key;
+        dailySortDir = (key === 'name') ? 1 : -1; // names default A-to-Z, numbers default high-to-low
+      }
+      renderDaily();
+    }
+
     function renderDaily() {
       const tag = document.getElementById('dailyClan').value;
       const week = document.getElementById('dailyWeek').value;
@@ -533,16 +568,25 @@
         // current member who simply didn't attack still wouldn't show real
         // activity anywhere, so this is indistinguishable from clutter and
         // safe to hide either way.
-        .filter((r) => r.total > 0 || r.attacks > 0)
-        .sort((x, y) => y.total - x.total);
+        .filter((r) => r.total > 0 || r.attacks > 0);
 
-      let html = '<div class="card"><div style="overflow-x:auto;"><table>';
-      html += '<tr><th>Name</th>' +
-        '<th class="num">D1 Score</th><th class="num">D1 Cards</th>' +
-        '<th class="num">D2 Score</th><th class="num">D2 Cards</th>' +
-        '<th class="num">D3 Score</th><th class="num">D3 Cards</th>' +
-        '<th class="num">D4 Score</th><th class="num">D4 Cards</th>' +
-        '<th class="num">3-Day</th><th class="num">Total</th><th class="num">Total Cards</th></tr>';
+      rows.sort((x, y) => {
+        const colDef = DAILY_COLUMNS.find((c) => c.key === dailySortKey);
+        if (colDef && colDef.type === 'text') {
+          return dailySortDir * String(x[dailySortKey]).localeCompare(String(y[dailySortKey]));
+        }
+        return dailySortDir * ((x[dailySortKey] || 0) - (y[dailySortKey] || 0));
+      });
+      dailyRowsCache = rows;
+
+      let html = '<div class="card"><div id="dailyTableWrap" style="overflow-x:auto;"><table>';
+      html += '<tr>' + DAILY_COLUMNS.map((c) => {
+        const active = c.key === dailySortKey;
+        const arrow = active ? (dailySortDir === 1 ? ' ▲' : ' ▼') : '';
+        const cls = c.type === 'text' ? '' : 'num';
+        return '<th class="' + cls + '" style="cursor:pointer; user-select:none;' + (active ? ' color:var(--accent);' : '') +
+          '" onclick="sortDaily(\'' + c.key + '\')" title="Click to sort">' + c.label + arrow + '</th>';
+      }).join('') + '</tr>';
       rows.forEach((r) => {
         const cleanTag = (r.ptag || '').replace('#', '');
         const nameCell = (r.name === r.ptag)
@@ -560,9 +604,39 @@
           '</tr>';
       });
       html += '</table></div>';
-      html += '<p style="color:var(--muted); font-size:12px; margin:10px 0 0;">' + rows.length + ' players · Cards = attacks used that day (max 4) · 3-Day = D1+D2+D3 score (Day 4 excluded) · Total = all four days.</p>';
+      html += '<p style="color:var(--muted); font-size:12px; margin:10px 0;">' + rows.length + ' players · Cards = attacks used that day (max 4) · 3-Day = D1+D2+D3 score (Day 4 excluded) · Total = all four days · click any column header to sort.</p>';
+      html += '<button onclick="downloadDailyImage()">Download image (for Discord, etc.)</button>';
+      html += '<span id="dailyImageStatus" style="color:var(--muted); font-size:12px; margin-left:10px;"></span>';
       html += '</div>';
       el.innerHTML = html;
+    }
+
+    // Renders the CURRENT (already filtered + sorted) Daily Scores table as a
+    // PNG and downloads it — no server round trip, just a snapshot of what's
+    // on screen right now, so whatever sort order you left it in is what gets
+    // shared. From there it's a normal image file: drag it into Discord, or
+    // use your phone/OS share sheet, same as any other photo.
+    async function downloadDailyImage() {
+      const status = document.getElementById('dailyImageStatus');
+      const wrap = document.getElementById('dailyTableWrap');
+      if (!wrap || typeof html2canvas === 'undefined') {
+        if (status) status.textContent = 'Image tool failed to load — try refreshing the page.';
+        return;
+      }
+      status.textContent = 'Rendering…';
+      try {
+        const canvas = await html2canvas(wrap, { backgroundColor: '#ffffff', scale: 2 });
+        const tag = document.getElementById('dailyClan').value;
+        const week = document.getElementById('dailyWeek').value;
+        const clanName = (CLAN_NAMES[tag] || tag).replace(/[^a-z0-9]/gi, '_');
+        const link = document.createElement('a');
+        link.download = clanName + '_week' + week + '_daily_scores.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        status.textContent = 'Downloaded.';
+      } catch (err) {
+        status.textContent = 'Could not render image: ' + err.message;
+      }
     }
 
     document.getElementById('clanTagInput').addEventListener('keydown', function (e) {
