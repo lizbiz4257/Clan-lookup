@@ -25,7 +25,7 @@ function rowsToCsv(rows) {
     'Name', 'Tag', 'Clan', 'In Clan', 'New?', 'Score This Week', 'Cards Played',
     'Week 1 Score', 'Week 1 Attacks', 'Week 2 Score', 'Week 2 Attacks',
     'Week 3 Score', 'Week 3 Attacks', 'Week 4 Score', 'Week 4 Attacks',
-    'Week 5 Score', 'Week 5 Attacks',
+    'Week 5 Score', 'Week 5 Attacks', 'Week 6 Score', 'Week 6 Attacks',
     'Total 5k', 'Elo', '5wa', '5kP', '5kG', '5kPPG',
     'Prior Clan', 'Prior Avg Score', 'Prior Avg Attacks'
   ];
@@ -37,7 +37,7 @@ function rowsToCsv(rows) {
     const fields = [
       r.name, r.tag, r.clanName || '', r.inClan, r.isNew ? 'Yes' : '', r.thisWeekScore, r.thisWeekAttacks
     ];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       fields.push(w[i] ? w[i].score : '', w[i] ? w[i].attacks : '');
     }
     fields.push(r.total5k, r.elo, r.fivewa, r.fiveKP, r.fiveKG, r.fiveKPPG, r.priorClanName || '', r.priorAvgScore, r.priorAvgAttacks);
