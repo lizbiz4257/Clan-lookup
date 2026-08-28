@@ -4328,8 +4328,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1200,
-            "attacks": 8
+            "fame": 400,
+            "attacks": 4
           },
           "d4": {
             "fame": 0,
@@ -4537,8 +4537,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 900,
-            "attacks": 7
+            "fame": 300,
+            "attacks": 3
           },
           "d4": {
             "fame": 0,
@@ -4594,8 +4594,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 900,
-            "attacks": 8
+            "fame": 400,
+            "attacks": 4
           },
           "d4": {
             "fame": 0,
@@ -4613,8 +4613,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1100,
-            "attacks": 7
+            "fame": 200,
+            "attacks": 3
           },
           "d4": {
             "fame": 0,
@@ -13088,8 +13088,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1700,
-            "attacks": 8
+            "fame": 1100,
+            "attacks": 4
           },
           "d4": {
             "fame": 0,
@@ -13297,8 +13297,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 700,
-            "attacks": 5
+            "fame": 50,
+            "attacks": 1
           },
           "d4": {
             "fame": 0,
@@ -13316,8 +13316,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1300,
-            "attacks": 7
+            "fame": 600,
+            "attacks": 3
           },
           "d4": {
             "fame": 0,
@@ -13411,8 +13411,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1600,
-            "attacks": 8
+            "fame": 1200,
+            "attacks": 4
           },
           "d4": {
             "fame": 0,
@@ -13430,8 +13430,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1500,
-            "attacks": 8
+            "fame": 600,
+            "attacks": 4
           },
           "d4": {
             "fame": 0,
@@ -13449,8 +13449,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1600,
-            "attacks": 8
+            "fame": 1000,
+            "attacks": 4
           },
           "d4": {
             "fame": 0,
@@ -13468,8 +13468,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1300,
-            "attacks": 8
+            "fame": 800,
+            "attacks": 4
           },
           "d4": {
             "fame": 0,
@@ -22487,8 +22487,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 850,
-            "attacks": 6
+            "fame": 300,
+            "attacks": 2
           },
           "d4": {
             "fame": 0,
@@ -23076,8 +23076,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1150,
-            "attacks": 8
+            "fame": 350,
+            "attacks": 4
           },
           "d4": {
             "fame": 0,
@@ -23342,8 +23342,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1500,
-            "attacks": 8
+            "fame": 700,
+            "attacks": 4
           },
           "d4": {
             "fame": 0,
@@ -23494,8 +23494,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1350,
-            "attacks": 8
+            "fame": 850,
+            "attacks": 4
           },
           "d4": {
             "fame": 0,
@@ -23741,8 +23741,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1250,
-            "attacks": 8
+            "fame": 600,
+            "attacks": 4
           },
           "d4": {
             "fame": 0,
@@ -23779,8 +23779,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 1450,
-            "attacks": 8
+            "fame": 950,
+            "attacks": 4
           },
           "d4": {
             "fame": 0,
@@ -26373,8 +26373,8 @@
             "attacks": 4
           },
           "d3": {
-            "fame": 650,
-            "attacks": 7
+            "fame": 50,
+            "attacks": 3
           },
           "d4": {
             "fame": 0,
