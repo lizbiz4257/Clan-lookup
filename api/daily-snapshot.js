@@ -272,6 +272,7 @@ module.exports = async function handler(req, res) {
         const dayKey = 'd' + warDay; // Fri->d1, Sat->d2, Sun->d3, Mon->d4
 
         if (!data[tag][targetWeek]) data[tag][targetWeek] = { players: {} };
+        let flaggedThisRun = 0;
         participants.forEach((p) => {
           // Both fame and decksUsed from the API are CUMULATIVE for the week, so
           // today's contribution is the difference from yesterday's stored total
@@ -281,6 +282,31 @@ module.exports = async function handler(req, res) {
           const prevDecks = (prev && typeof prev === 'object' ? prev.decks : 0)    || 0;
           const todayFame    = p.fame - prevFame;
           const todayAttacks = p.decksUsed - prevDecks;
+
+          // SANITY GUARD: a single war day allows at most 4 deck uses. If the
+          // diff exceeds that, `meta.baseline[p.tag]` was stale going into this
+          // capture (a prior day's run failed/was skipped for this player, or
+          // they were briefly missing from `participants`), so this delta is
+          // actually TWO OR MORE days of fame/attacks stacked into one — the
+          // exact "impossible score" bug confirmed in week 135-3 (e.g. a player
+          // showing 8 decks / ~1500 fame on a single day). We still WRITE the
+          // value (dropping it silently would lose real data) and still advance
+          // the baseline below (skipping that would only compound the error
+          // into the NEXT day too) — but we flag it loudly in both the response
+          // message and a persisted `_flags` list so it's caught the same
+          // morning instead of sitting wrong in the sheet for a week. Flagged
+          // rows need a manual spot-check against RoyaleAPI/CW2 Stats to split
+          // correctly — see day-corrections.json's `_flags` array.
+          if (todayAttacks > 4) {
+            flaggedThisRun++;
+            if (!data._flags) data._flags = [];
+            data._flags.push({
+              capturedAt: easternDate, clan: tag, week: targetWeek, day: dayKey,
+              tag: p.tag, name: p.name, fame: todayFame, attacks: todayAttacks,
+              note: 'exceeds 4 decks in one war day — baseline was likely stale; this day probably has a prior missed day\'s fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number.'
+            });
+          }
+
           if (!data[tag][targetWeek].players[p.tag]) {
             data[tag][targetWeek].players[p.tag] = {
               d1: { fame: 0, attacks: 0 }, d2: { fame: 0, attacks: 0 },
@@ -292,8 +318,15 @@ module.exports = async function handler(req, res) {
           meta.baseline[p.tag] = { fame: p.fame, decks: p.decksUsed };
         });
 
+        // Keep _flags from growing forever — same idea as the per-clan week
+        // pruning below, just a flat cap since flags aren't grouped by clan/week.
+        if (data._flags && data._flags.length > 200) {
+          data._flags = data._flags.slice(data._flags.length - 200);
+        }
+
         meta.lastCaptureDate = easternDate; // mark this clan done for today
-        results.push(tag + ': captured ' + targetWeek + ' ' + dayKey + ' for ' + participants.length + ' players');
+        results.push(tag + ': captured ' + targetWeek + ' ' + dayKey + ' for ' + participants.length + ' players' +
+          (flaggedThisRun ? ' — ⚠️ ' + flaggedThisRun + ' FLAGGED as impossible (>4 decks/day), check _flags in day-corrections.json' : ''));
       } catch (err) {
         results.push(tag + ': FAILED — ' + err.message);
       }
