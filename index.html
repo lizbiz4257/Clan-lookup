@@ -692,6 +692,53 @@
     // match the clans actually present in this group's data, then returns
     // the rows filtered to that clan (or all rows) and sorted BY CLAN first,
     // then by 5wa highest to lowest within each clan.
+    // Click-to-sort state per group: { col, dir } where col is a key into
+    // ROSTER_SORT_COLUMNS and dir is 'desc' or 'asc'. Absent/undefined means
+    // "default view" — grouped by clan with alts/L2W sunk to the bottom
+    // (see getFilteredSortedRows/sortRosterBy).
+    const rosterSortState = {};
+
+    // Every column that can be clicked to sort, and how to read its numeric
+    // value off a row. Text/badge columns (Account, Player, In Clan, Last
+    // Clan, etc.) aren't included — sorting those numerically wouldn't mean
+    // anything.
+    const ROSTER_SORT_COLUMNS = {
+      total5k: { label: 'Total 5k', get: (r) => r.total5k },
+      elo: { label: 'Elo', get: (r) => r.elo },
+      fivewa: { label: '5wa', get: (r) => r.fivewa },
+      thisWeekScore: { label: 'Score', get: (r) => r.thisWeekScore },
+      thisWeekAttacks: { label: 'Played', get: (r) => r.thisWeekAttacks },
+      fiveKP: { label: '5kP', get: (r) => r.fiveKP },
+      fiveKG: { label: '5kG', get: (r) => r.fiveKG },
+      fiveKPPG: { label: '5kPPG', get: (r) => r.fiveKPPG },
+      coloScore: { label: 'Colo Score', get: (r) => r.coloScore },
+      coloBattles: { label: 'Colo Battles', get: (r) => r.coloBattles }
+    };
+
+    // Clicking a column header: 1st click = largest-to-smallest, 2nd click
+    // (same column) = smallest-to-largest, 3rd click = back to the default
+    // clan-grouped view.
+    function sortRosterBy(key, col) {
+      const current = rosterSortState[key];
+      if (!current || current.col !== col) {
+        rosterSortState[key] = { col: col, dir: 'desc' };
+      } else if (current.dir === 'desc') {
+        rosterSortState[key] = { col: col, dir: 'asc' };
+      } else {
+        delete rosterSortState[key];
+      }
+      renderRosterTable(key);
+    }
+
+    // Builds one clickable <th> for a sortable column, with a ▼/▲ indicator
+    // when it's the active sort.
+    function sortableHeader(key, col) {
+      const label = ROSTER_SORT_COLUMNS[col].label;
+      const active = rosterSortState[key] && rosterSortState[key].col === col ? rosterSortState[key].dir : null;
+      const arrow = active === 'desc' ? ' ▼' : active === 'asc' ? ' ▲' : '';
+      return '<th style="cursor:pointer;user-select:none;" onclick="sortRosterBy(\'' + key + '\',\'' + col + '\')" title="Click to sort largest to smallest">' + label + arrow + '</th>';
+    }
+
     function getFilteredSortedRows(key) {
       const data = rosterDataCache[key];
       if (!data) return [];
@@ -720,6 +767,28 @@
       filterBar.style.display = distinctClans.length > 1 ? '' : 'none';
 
       const filtered = selected === 'all' ? data.rows.slice() : data.rows.filter((r) => r.clanName === selected);
+
+      // A clicked column header (see sortRosterBy) overrides the default
+      // clan-grouped view entirely — plain largest-to-smallest (or smallest-
+      // to-largest) on that one column, blanks always last regardless of
+      // direction, no clan grouping or alt/L2W sinking applied.
+      const activeSort = rosterSortState[key];
+      if (activeSort) {
+        const colDef = ROSTER_SORT_COLUMNS[activeSort.col];
+        if (colDef) {
+          filtered.sort((a, b) => {
+            const av = colDef.get(a);
+            const bv = colDef.get(b);
+            const aBlank = av == null;
+            const bBlank = bv == null;
+            if (aBlank !== bBlank) return aBlank ? 1 : -1; // blanks always last
+            if (aBlank && bBlank) return 0;
+            return activeSort.dir === 'asc' ? av - bv : bv - av;
+          });
+          return filtered;
+        }
+      }
+
       const coreCats = CORE_CATS[key]; // the tab's own 2 tracked clans, e.g. ['TKO','BAK2']
       filtered.sort((a, b) => {
         if (coreCats) {
@@ -781,15 +850,16 @@
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
       html += '<tr><th>Account</th><th>Player Tag</th><th>Player</th><th>Alt</th><th>Rostered</th>' +
         '<th>In Clan</th><th>Last Clan</th>' +
-        '<th>Total 5k</th><th>Elo</th><th>5wa</th>' +
-        '<th>Score</th><th>Played</th>' +
+        sortableHeader(key, 'total5k') + sortableHeader(key, 'elo') + sortableHeader(key, 'fivewa') +
+        sortableHeader(key, 'thisWeekScore') + sortableHeader(key, 'thisWeekAttacks') +
         '<th>' + wkHeader(0) + ' Score</th><th>' + wkHeader(0) + ' Played</th>' +
         '<th>' + wkHeader(1) + ' Score</th><th>' + wkHeader(1) + ' Played</th>' +
         '<th>' + wkHeader(2) + ' Score</th><th>' + wkHeader(2) + ' Played</th>' +
         '<th>' + wkHeader(3) + ' Score</th><th>' + wkHeader(3) + ' Played</th>' +
         '<th>' + wkHeader(4) + ' Score</th><th>' + wkHeader(4) + ' Played</th>' +
         '<th>' + wkHeader(5) + ' Score</th><th>' + wkHeader(5) + ' Played</th>' +
-        '<th>5kP</th><th>5kG</th><th>5kPPG</th><th>Colo Score</th><th>Colo Battles</th></tr>';
+        sortableHeader(key, 'fiveKP') + sortableHeader(key, 'fiveKG') + sortableHeader(key, 'fiveKPPG') +
+        sortableHeader(key, 'coloScore') + sortableHeader(key, 'coloBattles') + '</tr>';
 
       rows.forEach((r) => {
         const w = r.weeks || [];
@@ -802,7 +872,7 @@
           '<td>' + statusBadge(r.sheetInClan != null ? r.sheetInClan : r.inClan) + '</td>' +
           '<td>' + statusBadge(r.sheetLastClan != null ? r.sheetLastClan : r.clanName) + '</td>' +
           '<td' + categoryHighlightStyle(key, r) + '>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
-          '<td>' + (r.elo == null ? '–' : r.elo) + '</td>' +
+          '<td' + categoryHighlightStyle(key, r) + '>' + (r.elo == null ? '–' : r.elo) + '</td>' +
           '<td' + categoryHighlightStyle(key, r) + '>' + (r.fivewa == null ? '–' : r.fivewa) + '</td>' +
           '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>' +
           '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>';
@@ -820,8 +890,12 @@
           '</tr>';
       });
       html += '</table></div>';
-      html += '<button style="margin-top:12px;" onclick="downloadRosterExcel(\'' + key + '\')">Download to Excel</button>';
+      html += '<div style="margin-top:12px;font-size:0.85em;color:#666;">Click any stat column header to sort by it (click again to reverse, a third time to go back to the default clan-grouped view).</div>';
+      html += '<button style="margin-top:8px;" onclick="downloadRosterExcel(\'' + key + '\')">Download to Excel</button>';
       html += '<button class="secondary" style="margin-top:8px;" onclick="loadRosterGroup(\'' + key + '\')">Refresh</button>';
+      if (rosterSortState[key]) {
+        html += '<button class="secondary" style="margin-top:8px;" onclick="delete rosterSortState[\'' + key + '\']; renderRosterTable(\'' + key + '\');">Reset sort</button>';
+      }
       html += '</div>';
       results.innerHTML = html;
     }
