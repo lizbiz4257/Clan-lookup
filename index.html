@@ -228,12 +228,14 @@
 
     // The REAL war-score highlighting — copied directly from the Google Apps
     // Script's own CONFIG.tabs[...].scoreHighlight blocks (RealRosterCode.gs),
-    // not an invented heatmap. This colors the Score/Played cells (this
-    // week's numbers) by which clan the player is in, with a red "partial"
-    // override when the week's Played total isn't a multiple of a full war
-    // day (4 decks) — exactly like the sheet does for its own newest-week
-    // columns. Only 5k Rosters and 4k Rosters have this on the real sheet;
-    // Bak3 and 3.5/4.0 have no scoreHighlight config there either.
+    // not an invented heatmap. This colors cells by which clan the player is
+    // in, with a red "partial" override when a week's Played total isn't a
+    // multiple of a full war day (4 decks). Applied to the week-history
+    // Score/Played pairs (not the live/current Score+Played columns, which
+    // stay plain since that number isn't finalized yet) and, as a flat
+    // category color with no partial check, to Total 5k and 5wa. Only 5k
+    // Rosters and 4k Rosters have this on the real sheet; Bak3 and 3.5/4.0
+    // have no scoreHighlight config there either.
     const SCORE_HIGHLIGHT = {
       '5k': {
         decksPerDay: 4,
@@ -278,15 +280,24 @@
       return null;
     }
 
-    // Returns a ready-to-use ' style="..."' attribute string for the Score/
-    // Played <td> cells, or '' if this group has no scoreHighlight config
-    // (Bak3, 3.5/4.0) or no category/partial condition applies.
-    function scoreHighlightStyle(groupKey, r) {
+    // The row's clan category for this group ('TKO'/'BAK2'/'fourk'/'L2W'/
+    // 'external' for 5k, 'BAK1'/'BAK15'/'L2W'/'external' for 4k), or null if
+    // this group has no config or nothing matches. In Clan text wins, Last
+    // Clan is the fallback — same order as the .gs. Shared by the cell
+    // highlighting below AND the clan-grouping sort.
+    function clanCategoryFor(groupKey, r) {
+      const cfg = SCORE_HIGHLIGHT[groupKey];
+      if (!cfg) return null;
+      return categorizeForHighlight(cfg, r.sheetInClan) || categorizeForHighlight(cfg, r.sheetLastClan);
+    }
+
+    // Returns a ready-to-use ' style="..."' attribute string for a single
+    // week's Score/Played pair — category color, with the red partial
+    // override when that week's Played isn't a multiple of a full war day.
+    function weekHighlightStyle(groupKey, r, score, played) {
       const cfg = SCORE_HIGHLIGHT[groupKey];
       if (!cfg) return '';
-      const score = r.thisWeekScore;
-      const played = r.thisWeekAttacks;
-      const cat = categorizeForHighlight(cfg, r.sheetInClan) || categorizeForHighlight(cfg, r.sheetLastClan);
+      const cat = clanCategoryFor(groupKey, r);
       const perDay = cfg.decksPerDay || 4;
       const isPartial = (score != null && score > 0 && played != null && played > 0 && played % perDay !== 0);
       let color = null;
@@ -295,6 +306,16 @@
       } else if (cat) {
         color = cfg.colors[cat] || null;
       }
+      return color ? ' style="background:' + color + ';"' : '';
+    }
+
+    // Flat category color, no partial check — used for Total 5k and 5wa
+    // (aggregate stats, not a single day's deck count).
+    function categoryHighlightStyle(groupKey, r) {
+      const cfg = SCORE_HIGHLIGHT[groupKey];
+      if (!cfg) return '';
+      const cat = clanCategoryFor(groupKey, r);
+      const color = cat ? cfg.colors[cat] : null;
       return color ? ' style="background:' + color + ';"' : '';
     }
 
@@ -693,18 +714,46 @@
       filterBar.style.display = distinctClans.length > 1 ? '' : 'none';
 
       const filtered = selected === 'all' ? data.rows.slice() : data.rows.filter((r) => r.clanName === selected);
+      const coreCats = CORE_CATS[key]; // the tab's own 2 tracked clans, e.g. ['TKO','BAK2']
       filtered.sort((a, b) => {
-        const ac = a.clanName || a.sheetLastClan || '';
-        const bc = b.clanName || b.sheetLastClan || '';
-        if (ac !== bc) return ac.localeCompare(bc);
-        // Alts and L2W-status players sink to the bottom of their clan
-        // group instead of competing for top-of-list by 5wa.
+        if (coreCats) {
+          // Group by which of the tab's 2 clans the In Clan/Last Clan text
+          // matches — regardless of whether they're a currently-active
+          // member, so a parked/benched alt still lands under their clan.
+          // Anyone matching neither (L2W, External, no match at all) sinks
+          // below BOTH clan groups, to the very bottom of the whole table.
+          const ar = clanGroupRank(key, coreCats, a);
+          const br = clanGroupRank(key, coreCats, b);
+          if (ar !== br) return ar - br;
+        } else {
+          // Tabs with no clan-category system (Bak3, 3.5/4.0) — group by
+          // plain clan name/text as before.
+          const ac = a.clanName || a.sheetLastClan || '';
+          const bc = b.clanName || b.sheetLastClan || '';
+          if (ac !== bc) return ac.localeCompare(bc);
+        }
+        // Alts and L2W-status players sink to the bottom of their group
+        // instead of competing for top-of-list by 5wa.
         const aDown = sinksToBottom(a) ? 1 : 0;
         const bDown = sinksToBottom(b) ? 1 : 0;
         if (aDown !== bDown) return aDown - bDown;
         return (b.fivewa == null ? -Infinity : b.fivewa) - (a.fivewa == null ? -Infinity : a.fivewa);
       });
       return filtered;
+    }
+
+    // The tab's own 2 tracked clan categories, in display order — only the
+    // 2 groups with a scoreHighlight config (5k Rosters, 4k Rosters) have a
+    // clan-category system to group by; Bak3/3.5/4.0 fall back to plain
+    // clan-name grouping in getFilteredSortedRows above.
+    const CORE_CATS = { '5k': ['TKO', 'BAK2'], '4k': ['BAK1', 'BAK15'] };
+
+    // 0 or 1 if the row matches one of the tab's 2 tracked clans (by In
+    // Clan/Last Clan text, via the same categorize() used for highlighting);
+    // otherwise coreCats.length, sinking it below both real clan groups.
+    function clanGroupRank(key, coreCats, r) {
+      const idx = coreCats.indexOf(clanCategoryFor(key, r));
+      return idx === -1 ? coreCats.length : idx;
     }
 
     // True for an alt account, or anyone currently flagged L2W (in the
@@ -746,15 +795,16 @@
           '<td>' + statusBadge(r.rostered) + '</td>' +
           '<td>' + statusBadge(r.sheetInClan != null ? r.sheetInClan : r.inClan) + '</td>' +
           '<td>' + statusBadge(r.sheetLastClan != null ? r.sheetLastClan : r.clanName) + '</td>' +
-          '<td>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
+          '<td' + categoryHighlightStyle(key, r) + '>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
           '<td>' + (r.elo == null ? '–' : r.elo) + '</td>' +
-          '<td>' + (r.fivewa == null ? '–' : r.fivewa) + '</td>' +
-          '<td' + scoreHighlightStyle(key, r) + '>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>' +
-          '<td' + scoreHighlightStyle(key, r) + '>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>';
+          '<td' + categoryHighlightStyle(key, r) + '>' + (r.fivewa == null ? '–' : r.fivewa) + '</td>' +
+          '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>' +
+          '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>';
         for (let i = 0; i < 6; i++) {
           const wk = w[i];
           const priorMark = wk && wk.fromPriorClan ? ' *' : '';
-          html += '<td>' + (wk ? wk.score + priorMark : '–') + '</td>' + '<td>' + (wk ? wk.attacks : '–') + '</td>';
+          const wkStyle = wk ? weekHighlightStyle(key, r, wk.score, wk.attacks) : '';
+          html += '<td' + wkStyle + '>' + (wk ? wk.score + priorMark : '–') + '</td>' + '<td' + wkStyle + '>' + (wk ? wk.attacks : '–') + '</td>';
         }
         html += '<td>' + (r.fiveKP == null ? '–' : r.fiveKP) + '</td>' +
           '<td>' + (r.fiveKG == null ? '–' : r.fiveKG) + '</td>' +
