@@ -2,6 +2,10 @@
   "crons": [
     {
       "path": "/api/daily-snapshot",
+      "schedule": "30 10 * * 5,6,0,1"
+    },
+    {
+      "path": "/api/daily-snapshot",
       "schedule": "30 11 * * 5,6,0,1"
     },
     {
