@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2026-08-22c: 6-week history + Daily Scores ghost-row filter + per-day Cards + sortable headers + Download Image button. If you don't see this comment when you view the raw file on GitHub, you have the wrong copy. -->
+<!-- v2026-09-05: adds Rosters tab (5k/4k/Bak3/3.5-4.0 groupings, mirrors the Google Sheets tabs, powered by the existing /api/lookup endpoint) + fixes _flags showing as a fake clan in Daily Scores. Previous: v2026-08-22c 6-week history + Daily Scores ghost-row filter + per-day Cards + sortable headers + Download Image button. If you don't see this comment when you view the raw file on GitHub, you have the wrong copy. -->
 <html>
 <head>
   <meta charset="UTF-8">
@@ -97,6 +97,7 @@
     <div class="tabs">
       <button id="tabbtn-lookup" class="tab active" onclick="showTab('lookup')">Lookup</button>
       <button id="tabbtn-daily" class="tab" onclick="showTab('daily')">Daily Scores</button>
+      <button id="tabbtn-rosters" class="tab" onclick="showTab('rosters')">Rosters</button>
     </div>
 
     <div id="tab-lookup">
@@ -130,6 +131,17 @@
         <div id="dailyStatus" style="font-size:13px; margin-top:8px; min-height:16px;"></div>
       </div>
       <div id="dailyResults"></div>
+    </div>
+
+    <div id="tab-rosters" hidden>
+      <div class="tabs">
+        <button id="rgbtn-5k" class="tab active" onclick="showRosterGroup('5k')">5k Rosters</button>
+        <button id="rgbtn-4k" class="tab" onclick="showRosterGroup('4k')">4k Rosters</button>
+        <button id="rgbtn-bak3" class="tab" onclick="showRosterGroup('bak3')">Bak3</button>
+        <button id="rgbtn-35-40" class="tab" onclick="showRosterGroup('35-40')">3.5/4.0</button>
+      </div>
+      <div id="rostersStatus" style="font-size:13px; margin: -8px 0 12px; min-height:16px;"></div>
+      <div id="rostersResults"></div>
     </div>
   </div>
 
@@ -447,9 +459,136 @@
     function showTab(name) {
       document.getElementById('tab-lookup').hidden = (name !== 'lookup');
       document.getElementById('tab-daily').hidden = (name !== 'daily');
+      document.getElementById('tab-rosters').hidden = (name !== 'rosters');
       document.getElementById('tabbtn-lookup').classList.toggle('active', name === 'lookup');
       document.getElementById('tabbtn-daily').classList.toggle('active', name === 'daily');
+      document.getElementById('tabbtn-rosters').classList.toggle('active', name === 'rosters');
       if (name === 'daily' && !dailyData) loadDailyData();
+      if (name === 'rosters' && !currentRosterGroup) showRosterGroup('5k');
+    }
+
+    // ---------------- ROSTERS TAB ----------------
+    // Consolidates the same 4 groupings used on the Google Sheets side (5k
+    // Rosters, 4k Rosters, Bak3, 3.5/4.0) into one website view. Reuses the
+    // SAME live /api/lookup endpoint (backed by lib/clanData.js's
+    // lookupOneClan/buildFamilyIndex) that already powers the Lookup tab —
+    // no Apps Script involved, since Apps Script only runs bound to a Google
+    // Sheet and can't run on the website. This already IS the "auto-pull"
+    // path: the site was already calling the Royale API live for the Lookup
+    // tab, this just points that same call at fixed clan groups and renders
+    // them together like the Sheets tabs do.
+    const ROSTER_GROUPS = {
+      '5k':    { label: '5k Rosters', tags: ['#YQJPR2V9', '#YRVC9QVJ'] }, // TKO + !Baked! 2.0
+      '4k':    { label: '4k Rosters', tags: ['#GURCRRY9', '#LUCQVPRV'] }, // !Baked! 1.0 + !Baked! 1.5
+      'bak3':  { label: 'Bak3',       tags: ['#QJU8P80C'] },              // !Baked! 3.0
+      '35-40': { label: '3.5/4.0',    tags: ['#QVY92JLV', '#GQ20UQR8'] }  // Baked 3.5 + Baked 4.0
+    };
+    const rosterDataCache = {}; // group key -> last fetched data (avoids re-fetching on tab switch)
+    let currentRosterGroup = null;
+
+    function showRosterGroup(key) {
+      currentRosterGroup = key;
+      Object.keys(ROSTER_GROUPS).forEach((k) => {
+        document.getElementById('rgbtn-' + k).classList.toggle('active', k === key);
+      });
+      if (rosterDataCache[key]) {
+        renderRosterTable(key);
+      } else {
+        loadRosterGroup(key);
+      }
+    }
+
+    async function loadRosterGroup(key) {
+      const group = ROSTER_GROUPS[key];
+      const status = document.getElementById('rostersStatus');
+      const results = document.getElementById('rostersResults');
+      status.className = 'busy';
+      status.innerHTML = '<span class="spinner"></span>Loading ' + group.label + '…';
+      results.innerHTML = '';
+      try {
+        const resp = await fetch('/api/lookup?tags=' + encodeURIComponent(group.tags.join(',')));
+        const data = await resp.json();
+        if (!resp.ok || data.error) throw new Error(data.error || 'Request failed');
+        rosterDataCache[key] = data;
+        status.className = '';
+        status.textContent = '';
+        if (currentRosterGroup === key) renderRosterTable(key);
+      } catch (err) {
+        status.className = 'err';
+        status.textContent = 'Error loading ' + group.label + ': ' + err.message;
+      }
+    }
+
+    function renderRosterTable(key) {
+      const data = rosterDataCache[key];
+      const results = document.getElementById('rostersResults');
+      if (!data) return;
+      const labels = (data.clans && data.clans[0] && data.clans[0].weekLabels) || [];
+      const wkHeader = (i) => labels[i] || ('Wk' + (i + 1));
+      let html = '<div class="card"><div style="overflow-x:auto;"><table>';
+      html += '<tr><th>Name</th><th>Tag</th><th>Clan</th><th>In Clan</th>' +
+        '<th>Score This Week</th><th>Cards Played</th>' +
+        '<th>' + wkHeader(0) + ' Score</th><th>' + wkHeader(0) + ' Atk</th>' +
+        '<th>' + wkHeader(1) + ' Score</th><th>' + wkHeader(1) + ' Atk</th>' +
+        '<th>' + wkHeader(2) + ' Score</th><th>' + wkHeader(2) + ' Atk</th>' +
+        '<th>' + wkHeader(3) + ' Score</th><th>' + wkHeader(3) + ' Atk</th>' +
+        '<th>' + wkHeader(4) + ' Score</th><th>' + wkHeader(4) + ' Atk</th>' +
+        '<th>' + wkHeader(5) + ' Score</th><th>' + wkHeader(5) + ' Atk</th>' +
+        '<th>Total 5k</th><th>Elo</th><th>5wa</th>' +
+        '<th>5kP</th><th>5kG</th><th>5kPPG</th></tr>';
+
+      data.rows.forEach((r) => {
+        const w = r.weeks || [];
+        html += '<tr>' +
+          '<td>' + playerLink(r) + '</td>' +
+          '<td>' + r.tag + '</td>' +
+          '<td>' + (r.clanName || '–') + '</td>' +
+          '<td>' + r.inClan + '</td>' +
+          '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>' +
+          '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>';
+        for (let i = 0; i < 6; i++) {
+          const wk = w[i];
+          const priorMark = wk && wk.fromPriorClan ? ' *' : '';
+          html += '<td>' + (wk ? wk.score + priorMark : '–') + '</td>' + '<td>' + (wk ? wk.attacks : '–') + '</td>';
+        }
+        html += '<td>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
+          '<td>' + (r.elo == null ? '–' : r.elo) + '</td>' +
+          '<td>' + (r.fivewa == null ? '–' : r.fivewa) + '</td>' +
+          '<td>' + (r.fiveKP == null ? '–' : r.fiveKP) + '</td>' +
+          '<td>' + (r.fiveKG == null ? '–' : r.fiveKG) + '</td>' +
+          '<td>' + (r.fiveKPPG == null ? '–' : r.fiveKPPG) + '</td>' +
+          '</tr>';
+      });
+      html += '</table></div>';
+      html += '<button style="margin-top:12px;" onclick="downloadRosterExcel(\'' + key + '\')">Download to Excel</button>';
+      html += '<button class="secondary" style="margin-top:8px;" onclick="loadRosterGroup(\'' + key + '\')">Refresh</button>';
+      html += '</div>';
+      results.innerHTML = html;
+    }
+
+    function downloadRosterExcel(key) {
+      const data = rosterDataCache[key];
+      if (!data) return;
+      const group = ROSTER_GROUPS[key];
+      const headers = ['Name', 'Tag', 'Clan', 'In Clan', 'Score This Week', 'Cards Played',
+        'Week 1 Score', 'Week 1 Attacks', 'Week 2 Score', 'Week 2 Attacks',
+        'Week 3 Score', 'Week 3 Attacks', 'Week 4 Score', 'Week 4 Attacks',
+        'Week 5 Score', 'Week 5 Attacks', 'Week 6 Score', 'Week 6 Attacks',
+        'Total 5k', 'Elo', '5wa', '5kP', '5kG', '5kPPG'];
+      const rows = data.rows.map((r) => {
+        const w = r.weeks || [];
+        const row = [r.name, r.tag, r.clanName || '', r.inClan, r.thisWeekScore, r.thisWeekAttacks];
+        for (let i = 0; i < 6; i++) {
+          const wk = w[i];
+          row.push(wk ? wk.score : null, wk ? wk.attacks : null);
+        }
+        row.push(r.total5k, r.elo, r.fivewa, r.fiveKP, r.fiveKG, r.fiveKPPG);
+        return row;
+      });
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, group.label);
+      XLSX.writeFile(wb, group.label.replace(/[^a-z0-9]/gi, '_') + '.xlsx');
     }
 
     async function loadDailyData() {
