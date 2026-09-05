@@ -107,6 +107,10 @@
     .badge-b10 { background:#e6cff2; }
     .badge-b15 { background:#20585e; color:#fff; }
     .badge-partial { background:#f4cccc; }
+    /* Alt column dropdown chip colors, also sampled directly from the live
+       sheet (2026-09-05): Yes = light peach/orange, No = light green. */
+    .badge-alt-yes { background:#f4c7aa; }
+    .badge-alt-no { background:#cdeac0; }
   </style>
 </head>
 <body>
@@ -201,7 +205,7 @@
       const v = String(value);
       let cls = null;
       if (/L2W/i.test(v)) cls = 'badge-l2w';
-      else if (/TKO/i.test(v)) cls = 'badge-tko';
+      else if (/TKO/i.test(v) || /Team\s*Knock/i.test(v)) cls = 'badge-tko';
       else if (/External/i.test(v)) cls = 'badge-external';
       else if (/B1\.5/i.test(v)) cls = 'badge-b15';
       else if (/B1\.0/i.test(v)) cls = 'badge-b10';
@@ -209,6 +213,89 @@
       else if (/Partial|Retired/i.test(v)) cls = 'badge-partial';
       if (!cls) return v;
       return '<span class="badge ' + cls + '">' + v + '</span>';
+    }
+
+    // Same idea as statusBadge, but for the Alt column specifically —
+    // plain "Yes"/"No" would otherwise fall through statusBadge with no
+    // match, since those words are ambiguous elsewhere in the table.
+    function altBadge(value) {
+      if (value == null || value === '') return '–';
+      const v = String(value).trim();
+      if (/^yes$/i.test(v)) return '<span class="badge badge-alt-yes">' + v + '</span>';
+      if (/^no$/i.test(v)) return '<span class="badge badge-alt-no">' + v + '</span>';
+      return v;
+    }
+
+    // The REAL war-score highlighting — copied directly from the Google Apps
+    // Script's own CONFIG.tabs[...].scoreHighlight blocks (RealRosterCode.gs),
+    // not an invented heatmap. This colors the Score/Played cells (this
+    // week's numbers) by which clan the player is in, with a red "partial"
+    // override when the week's Played total isn't a multiple of a full war
+    // day (4 decks) — exactly like the sheet does for its own newest-week
+    // columns. Only 5k Rosters and 4k Rosters have this on the real sheet;
+    // Bak3 and 3.5/4.0 have no scoreHighlight config there either.
+    const SCORE_HIGHLIGHT = {
+      '5k': {
+        decksPerDay: 4,
+        colors: { partial: '#ff0000', TKO: '#fce5cd', BAK2: '#cfe2f3', fourk: '#93c47d', L2W: '#46bdc6', external: '#cccccc' },
+        partialCats: ['TKO', 'BAK2'],
+        categoryPatterns: [
+          { pattern: 'l2w', cat: 'L2W' },
+          { pattern: 'external', cat: 'external' },
+          { pattern: 'b2', cat: 'BAK2' },
+          { pattern: '2.0', cat: 'BAK2' },
+          { pattern: 'b1', cat: 'fourk' },
+          { pattern: '1.0', cat: 'fourk' },
+          { pattern: '1.5', cat: 'fourk' },
+          { pattern: 'team knock', cat: 'TKO' }, // "Team Knockouts" written out, not just "TKO"
+          { pattern: 'tko', cat: 'TKO' }
+        ]
+      },
+      '4k': {
+        decksPerDay: 4,
+        colors: { partial: '#ff0000', BAK1: '#d9ead3', BAK15: '#ead1dc', L2W: '#46bdc6', external: '#cccccc' },
+        partialCats: ['BAK1', 'BAK15'],
+        categoryPatterns: [ // 1.5 patterns must come before the b1/1.0 ones
+          { pattern: 'l2w', cat: 'L2W' },
+          { pattern: 'external', cat: 'external' },
+          { pattern: 'b1.5', cat: 'BAK15' },
+          { pattern: '1.5', cat: 'BAK15' },
+          { pattern: 'b1', cat: 'BAK1' },
+          { pattern: '1.0', cat: 'BAK1' }
+        ]
+      }
+    };
+
+    // Same categorize() logic as the .gs's applyScoreHighlight_: checks the
+    // sheet's In Clan text first, falls back to Last Clan, first pattern in
+    // the ordered list that appears anywhere in the (lowercased) text wins.
+    function categorizeForHighlight(cfg, text) {
+      const t = String(text || '').toLowerCase();
+      if (!t) return null;
+      for (let p = 0; p < cfg.categoryPatterns.length; p++) {
+        if (t.indexOf(cfg.categoryPatterns[p].pattern) !== -1) return cfg.categoryPatterns[p].cat;
+      }
+      return null;
+    }
+
+    // Returns a ready-to-use ' style="..."' attribute string for the Score/
+    // Played <td> cells, or '' if this group has no scoreHighlight config
+    // (Bak3, 3.5/4.0) or no category/partial condition applies.
+    function scoreHighlightStyle(groupKey, r) {
+      const cfg = SCORE_HIGHLIGHT[groupKey];
+      if (!cfg) return '';
+      const score = r.thisWeekScore;
+      const played = r.thisWeekAttacks;
+      const cat = categorizeForHighlight(cfg, r.sheetInClan) || categorizeForHighlight(cfg, r.sheetLastClan);
+      const perDay = cfg.decksPerDay || 4;
+      const isPartial = (score != null && score > 0 && played != null && played > 0 && played % perDay !== 0);
+      let color = null;
+      if (isPartial && (!cat || cfg.partialCats.indexOf(cat) !== -1)) {
+        color = cfg.colors.partial || null;
+      } else if (cat) {
+        color = cfg.colors[cat] || null;
+      }
+      return color ? ' style="background:' + color + ';"' : '';
     }
 
     async function lookupClan() {
@@ -607,12 +694,26 @@
 
       const filtered = selected === 'all' ? data.rows.slice() : data.rows.filter((r) => r.clanName === selected);
       filtered.sort((a, b) => {
-        const ac = a.clanName || '';
-        const bc = b.clanName || '';
+        const ac = a.clanName || a.sheetLastClan || '';
+        const bc = b.clanName || b.sheetLastClan || '';
         if (ac !== bc) return ac.localeCompare(bc);
+        // Alts and L2W-status players sink to the bottom of their clan
+        // group instead of competing for top-of-list by 5wa.
+        const aDown = sinksToBottom(a) ? 1 : 0;
+        const bDown = sinksToBottom(b) ? 1 : 0;
+        if (aDown !== bDown) return aDown - bDown;
         return (b.fivewa == null ? -Infinity : b.fivewa) - (a.fivewa == null ? -Infinity : a.fivewa);
       });
       return filtered;
+    }
+
+    // True for an alt account, or anyone currently flagged L2W (in the
+    // sheet's own In Clan / Last Clan / Rostered text) — both sink to the
+    // bottom of their clan group in the sort above.
+    function sinksToBottom(r) {
+      if (r.alt && /^yes$/i.test(String(r.alt).trim())) return true;
+      const fields = [r.sheetInClan, r.sheetLastClan, r.rostered];
+      return fields.some((v) => v && /L2W/i.test(String(v)));
     }
 
     function renderRosterTable(key) {
@@ -623,7 +724,7 @@
       const labels = (data.clans && data.clans[0] && data.clans[0].weekLabels) || [];
       const wkHeader = (i) => labels[i] || ('Wk' + (i + 1));
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
-      html += '<tr><th>Account</th><th>Player Tag</th><th>Player</th><th>Rostered</th>' +
+      html += '<tr><th>Account</th><th>Player Tag</th><th>Player</th><th>Alt</th><th>Rostered</th>' +
         '<th>In Clan</th><th>Last Clan</th>' +
         '<th>Total 5k</th><th>Elo</th><th>5wa</th>' +
         '<th>Score</th><th>Played</th>' +
@@ -641,14 +742,15 @@
           '<td>' + playerLink(r) + '</td>' +
           '<td>' + r.tag + '</td>' +
           '<td>' + (r.discordName || '–') + '</td>' +
+          '<td>' + altBadge(r.alt) + '</td>' +
           '<td>' + statusBadge(r.rostered) + '</td>' +
           '<td>' + statusBadge(r.sheetInClan != null ? r.sheetInClan : r.inClan) + '</td>' +
           '<td>' + statusBadge(r.sheetLastClan != null ? r.sheetLastClan : r.clanName) + '</td>' +
           '<td>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
           '<td>' + (r.elo == null ? '–' : r.elo) + '</td>' +
           '<td>' + (r.fivewa == null ? '–' : r.fivewa) + '</td>' +
-          '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>' +
-          '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>';
+          '<td' + scoreHighlightStyle(key, r) + '>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>' +
+          '<td' + scoreHighlightStyle(key, r) + '>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>';
         for (let i = 0; i < 6; i++) {
           const wk = w[i];
           const priorMark = wk && wk.fromPriorClan ? ' *' : '';
@@ -672,7 +774,7 @@
       const data = rosterDataCache[key];
       if (!data) return;
       const group = ROSTER_GROUPS[key];
-      const headers = ['Account', 'Player Tag', 'Player', 'Rostered', 'In Clan', 'Last Clan',
+      const headers = ['Account', 'Player Tag', 'Player', 'Alt', 'Rostered', 'In Clan', 'Last Clan',
         'Total 5k', 'Elo', '5wa', 'Score', 'Played',
         'Week 1 Score', 'Week 1 Played', 'Week 2 Score', 'Week 2 Played',
         'Week 3 Score', 'Week 3 Played', 'Week 4 Score', 'Week 4 Played',
@@ -680,7 +782,7 @@
         '5kP', '5kG', '5kPPG', 'Colo Score', 'Colo Battles'];
       const rows = getFilteredSortedRows(key).map((r) => {
         const w = r.weeks || [];
-        const row = [r.name, r.tag, r.discordName || '', r.rostered || '',
+        const row = [r.name, r.tag, r.discordName || '', r.alt || '', r.rostered || '',
           (r.sheetInClan != null ? r.sheetInClan : r.inClan),
           (r.sheetLastClan != null ? r.sheetLastClan : r.clanName) || '',
           r.total5k, r.elo, r.fivewa, r.thisWeekScore, r.thisWeekAttacks];
