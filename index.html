@@ -317,17 +317,40 @@
 
     // Flat category color, no partial check — used for Total 5k and 5wa
     // (aggregate stats, not a single day's deck count).
-    function categoryHighlightStyle(groupKey, r) {
-      const cfg = SCORE_HIGHLIGHT[groupKey];
-      if (!cfg) return '';
-      const cat = clanCategoryFor(groupKey, r);
-      // Total 5k/Elo/5wa only get colored for the tab's own 2 tracked
-      // clans (TKO/BAK2, BAK1/BAK15) — the sheet doesn't color these
-      // columns for L2W/External players at all, so neither should this.
-      const coreCats = CORE_CATS[groupKey];
-      if (!coreCats || coreCats.indexOf(cat) === -1) return '';
-      const color = cfg.colors[cat] || null;
-      return color ? ' style="background:' + color + ';"' : '';
+    // Total 5k, Elo, and 5wa turned out NOT to use the clan-category colors
+    // at all — checked directly on the live Google Sheet (pixel-sampled a
+    // real range of rows) and confirmed these 3 columns each carry their
+    // own plain Google Sheets "color scale": red at the low end, white in
+    // the middle, green at the high end, purely by VALUE — completely
+    // separate from the clan-category coloring on the Score/Played columns
+    // (which IS confirmed correct — those show the real peach/teal/etc.
+    // category colors on the sheet). Endpoint colors below are averaged
+    // from actual sampled sheet pixels (red ~rgb(230,150,145), green
+    // ~rgb(90,190,140)), not guessed. Computed relative to whichever rows
+    // are currently in view, same as Sheets' own min/mid/max color scale.
+    function valueScale(values) {
+      const nums = values.filter((v) => v != null && !isNaN(v));
+      if (!nums.length) return null;
+      return { min: Math.min(...nums), max: Math.max(...nums) };
+    }
+
+    function valueScaleStyle(scale, value) {
+      if (!scale || value == null || isNaN(value) || scale.max === scale.min) return '';
+      const t = (value - scale.min) / (scale.max - scale.min); // 0..1
+      let r, g, b;
+      if (t < 0.5) {
+        const k = t / 0.5; // 0 (red) .. 1 (white)
+        r = 230 + (255 - 230) * k;
+        g = 150 + (255 - 150) * k;
+        b = 145 + (255 - 145) * k;
+      } else {
+        const k = (t - 0.5) / 0.5; // 0 (white) .. 1 (green)
+        r = 255 + (90 - 255) * k;
+        g = 255 + (190 - 255) * k;
+        b = 255 + (140 - 255) * k;
+      }
+      const hex = (n) => Math.round(n).toString(16).padStart(2, '0');
+      return ' style="background:#' + hex(r) + hex(g) + hex(b) + ';"';
     }
 
     async function lookupClan() {
@@ -852,6 +875,13 @@
       const rows = getFilteredSortedRows(key);
       const labels = (data.clans && data.clans[0] && data.clans[0].weekLabels) || [];
       const wkHeader = (i) => labels[i] || ('Wk' + (i + 1));
+      // Total 5k/Elo/5wa color scale — relative to whatever rows are
+      // currently in view, same idea as the sheet's own color scale.
+      const scales = {
+        total5k: valueScale(rows.map((r) => r.total5k)),
+        elo: valueScale(rows.map((r) => r.elo)),
+        fivewa: valueScale(rows.map((r) => r.fivewa))
+      };
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
       html += '<tr><th>Account</th><th>Player Tag</th><th>Player</th><th>Alt</th><th>Rostered</th>' +
         '<th>In Clan</th><th>Last Clan</th>' +
@@ -876,9 +906,9 @@
           '<td>' + statusBadge(r.rostered) + '</td>' +
           '<td>' + statusBadge(r.sheetInClan != null ? r.sheetInClan : r.inClan) + '</td>' +
           '<td>' + statusBadge(r.sheetLastClan != null ? r.sheetLastClan : r.clanName) + '</td>' +
-          '<td' + categoryHighlightStyle(key, r) + '>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
-          '<td' + categoryHighlightStyle(key, r) + '>' + (r.elo == null ? '–' : r.elo) + '</td>' +
-          '<td' + categoryHighlightStyle(key, r) + '>' + (r.fivewa == null ? '–' : r.fivewa) + '</td>' +
+          '<td' + valueScaleStyle(scales.total5k, r.total5k) + '>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
+          '<td' + valueScaleStyle(scales.elo, r.elo) + '>' + (r.elo == null ? '–' : r.elo) + '</td>' +
+          '<td' + valueScaleStyle(scales.fivewa, r.fivewa) + '>' + (r.fivewa == null ? '–' : r.fivewa) + '</td>' +
           '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>' +
           '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>';
         for (let i = 0; i < 6; i++) {
