@@ -466,7 +466,15 @@
       }
       if (!json) { status.className = 'err'; status.textContent = 'Could not load daily data (' + lastErr + ').'; return; }
       dailyData = json;
-      const tags = Object.keys(json).filter((t) => t !== '_meta' && json[t] && Object.keys(json[t]).length);
+      // FIX (2026-09-05): only '_meta' was excluded here, so '_flags' (a non-
+      // empty array the daily-snapshot script uses to log suspicious/impossible
+      // day values) slipped through as if it were a real clan tag — showing up
+      // in the Clan dropdown as "_flags", and picking it made the Week dropdown
+      // show array indices (e.g. "72") since Object.keys() on an array just
+      // returns its index numbers. Excluding every underscore-prefixed key
+      // (not just '_meta') future-proofs this against any other metadata keys
+      // the snapshot script adds later.
+      const tags = Object.keys(json).filter((t) => t.charAt(0) !== '_' && json[t] && Object.keys(json[t]).length);
       const clanSel = document.getElementById('dailyClan');
       clanSel.innerHTML = tags.map((t) => '<option value="' + t + '">' + (CLAN_NAMES[t] || t) + '</option>').join('');
       if (!tags.length) {
