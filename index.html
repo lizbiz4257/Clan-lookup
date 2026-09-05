@@ -87,16 +87,18 @@
     .fieldlabel { font-size: 12px; color: var(--muted); font-weight: 600; margin: 0 0 4px; }
     td.num, th.num { text-align: right; }
     .threecol { font-weight: 700; color: var(--accent-dark); }
-    /* Roster status badges — colors match the "Key" legend on the JB Dashboard
-       sheet tab (Teal=L2W Week, Orange=TKO week, Grey=External wk,
-       Green=4k week, Red=Partial). Applied to In Clan / Last Clan cells on
-       the Rosters tab based on keyword matching against that same legend. */
-    .badge { display:inline-block; padding:2px 7px; border-radius:5px; font-weight:600; }
-    .badge-l2w { background:#4fc3c3; color:#04302f; }
-    .badge-tko { background:#f6c592; color:#5a3200; }
-    .badge-external { background:#d9d9d9; color:#333; }
-    .badge-4k { background:#b6d7a8; color:#1e4620; }
-    .badge-partial { background:#e06666; color:#fff; }
+    /* Roster status badges — colors copied directly from the actual dropdown
+       chip colors on the live "5k Rosters" sheet tab (sampled 2026-09-05):
+       TKO = light green, L2W = light blue, External = light grey,
+       4k/B1.0/B1.5/B2 = light orange. These match Google Sheets' own
+       standard "light 3" palette swatches. Applied to In Clan / Last Clan /
+       Rostered cells on the Rosters tab based on keyword matching. */
+    .badge { display:inline-block; padding:2px 7px; border-radius:5px; font-weight:600; color:#000; }
+    .badge-tko { background:#d9ead3; }
+    .badge-l2w { background:#c9daf8; }
+    .badge-external { background:#efefef; }
+    .badge-4k { background:#fce5cd; }
+    .badge-partial { background:#f4cccc; }
   </style>
 </head>
 <body>
@@ -571,7 +573,12 @@
       if (!data) return [];
       const selectEl = document.getElementById('rosterClanFilter');
       const filterBar = document.getElementById('rostersFilterBar');
-      const distinctClans = Array.from(new Set(data.rows.map((r) => r.clanName).filter(Boolean))).sort();
+      // Filter options are just this group's own tracked clan(s) — e.g. TKO
+      // and !Baked! 2.0 for the 5k group — NOT every "last known clan" that
+      // shows up for former members via the family-index fallback (that
+      // could be any of the 9 family clans and would make the dropdown
+      // useless as a "which of this tab's clans" filter).
+      const distinctClans = (data.clans || []).map((c) => c.clanName).filter(Boolean).sort();
 
       let selected;
       if (selectEl.dataset.group === key) {
