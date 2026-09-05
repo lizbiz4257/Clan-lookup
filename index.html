@@ -216,6 +216,12 @@
       else if (/B1\.5/i.test(v)) cls = 'badge-b15';
       else if (/B1\.0/i.test(v)) cls = 'badge-b10';
       else if (/\b4k\b|\bB2\b/i.test(v)) cls = 'badge-4k';
+      else if (/!?Baked!?\s*2\.?0/i.test(v)) {
+        cls = 'badge-4k';
+        // Same normalization as Team Knockouts -> TKO: show "B2" on the
+        // badge, not the sheet's spelled-out "Baked 2.0"/"!Baked! 2.0".
+        v = v.replace(/!?Baked!?\s*2\.?0/i, 'B2');
+      }
       else if (/Partial|Retired/i.test(v)) cls = 'badge-partial';
       if (!cls) return v;
       return '<span class="badge ' + cls + '">' + v + '</span>';
@@ -864,6 +870,15 @@
     // bottom of their clan group in the sort above.
     function sinksToBottom(r) {
       if (r.alt && /^yes$/i.test(String(r.alt).trim())) return true;
+      return isL2W(r);
+    }
+
+    // True if this row is currently flagged L2W anywhere in the sheet's own
+    // In Clan / Last Clan / Rostered text. L2W players aren't playing for
+    // the tracked clan that week, so their Score/Played numbers (current AND
+    // week-history) shouldn't be shown at all — even if the sheet has a
+    // stale/leftover value sitting in those cells.
+    function isL2W(r) {
       const fields = [r.sheetInClan, r.sheetLastClan, r.rostered];
       return fields.some((v) => v && /L2W/i.test(String(v)));
     }
@@ -898,6 +913,7 @@
 
       rows.forEach((r) => {
         const w = r.weeks || [];
+        const l2w = isL2W(r);
         html += '<tr>' +
           '<td>' + playerLink(r) + '</td>' +
           '<td>' + r.tag + '</td>' +
@@ -909,13 +925,13 @@
           '<td' + valueScaleStyle(scales.total5k, r.total5k) + '>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
           '<td' + valueScaleStyle(scales.elo, r.elo) + '>' + (r.elo == null ? '–' : r.elo) + '</td>' +
           '<td' + valueScaleStyle(scales.fivewa, r.fivewa) + '>' + (r.fivewa == null ? '–' : r.fivewa) + '</td>' +
-          '<td>' + (r.thisWeekScore == null ? '–' : r.thisWeekScore) + '</td>' +
-          '<td>' + (r.thisWeekAttacks == null ? '–' : r.thisWeekAttacks) + '</td>';
+          '<td>' + (r.thisWeekScore == null || l2w ? '–' : r.thisWeekScore) + '</td>' +
+          '<td>' + (r.thisWeekAttacks == null || l2w ? '–' : r.thisWeekAttacks) + '</td>';
         for (let i = 0; i < 6; i++) {
           const wk = w[i];
           const priorMark = wk && wk.fromPriorClan ? ' *' : '';
-          const wkStyle = wk ? weekHighlightStyle(key, r, wk.score, wk.attacks) : '';
-          html += '<td' + wkStyle + '>' + (wk ? wk.score + priorMark : '–') + '</td>' + '<td' + wkStyle + '>' + (wk ? wk.attacks : '–') + '</td>';
+          const wkStyle = wk && !l2w ? weekHighlightStyle(key, r, wk.score, wk.attacks) : '';
+          html += '<td' + wkStyle + '>' + (wk && !l2w ? wk.score + priorMark : '–') + '</td>' + '<td' + wkStyle + '>' + (wk && !l2w ? wk.attacks : '–') + '</td>';
         }
         html += '<td>' + (r.fiveKP == null ? '–' : r.fiveKP) + '</td>' +
           '<td>' + (r.fiveKG == null ? '–' : r.fiveKG) + '</td>' +
@@ -947,13 +963,15 @@
         '5kP', '5kG', '5kPPG', 'Colo Score', 'Colo Battles'];
       const rows = getFilteredSortedRows(key).map((r) => {
         const w = r.weeks || [];
+        const l2w = isL2W(r);
         const row = [r.name, r.tag, r.discordName || '', r.alt || '', r.rostered || '',
           (r.sheetInClan != null ? r.sheetInClan : r.inClan),
           (r.sheetLastClan != null ? r.sheetLastClan : r.clanName) || '',
-          r.total5k, r.elo, r.fivewa, r.thisWeekScore, r.thisWeekAttacks];
+          r.total5k, r.elo, r.fivewa,
+          l2w ? null : r.thisWeekScore, l2w ? null : r.thisWeekAttacks];
         for (let i = 0; i < 6; i++) {
           const wk = w[i];
-          row.push(wk ? wk.score : null, wk ? wk.attacks : null);
+          row.push(wk && !l2w ? wk.score : null, wk && !l2w ? wk.attacks : null);
         }
         row.push(r.fiveKP, r.fiveKG, r.fiveKPPG, r.coloScore, r.coloBattles);
         return row;
