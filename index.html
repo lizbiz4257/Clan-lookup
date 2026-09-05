@@ -321,7 +321,12 @@
       const cfg = SCORE_HIGHLIGHT[groupKey];
       if (!cfg) return '';
       const cat = clanCategoryFor(groupKey, r);
-      const color = cat ? cfg.colors[cat] : null;
+      // Total 5k/Elo/5wa only get colored for the tab's own 2 tracked
+      // clans (TKO/BAK2, BAK1/BAK15) — the sheet doesn't color these
+      // columns for L2W/External players at all, so neither should this.
+      const coreCats = CORE_CATS[groupKey];
+      if (!coreCats || coreCats.indexOf(cat) === -1) return '';
+      const color = cfg.colors[cat] || null;
       return color ? ' style="background:' + color + ';"' : '';
     }
 
