@@ -88,16 +88,24 @@
     td.num, th.num { text-align: right; }
     .threecol { font-weight: 700; color: var(--accent-dark); }
     /* Roster status badges — colors copied directly from the actual dropdown
-       chip colors on the live "5k Rosters" sheet tab (sampled 2026-09-05):
+       chip colors on the live sheet tabs (sampled 2026-09-05 via pixel
+       sampling of the real cells, not guessed):
        TKO = light green, L2W = light blue, External = light grey,
-       4k/B1.0/B1.5/B2 = light orange. These match Google Sheets' own
-       standard "light 3" palette swatches. Applied to In Clan / Last Clan /
-       Rostered cells on the Rosters tab based on keyword matching. */
+       B2 ("4k" as it appears on the 5k Rosters tab) = light orange — these
+       are shared across tabs and match Google Sheets' standard "light 3"
+       palette. 4k Rosters has its OWN distinct colors for its own two
+       clans: B1.0 = light purple, B1.5 = dark teal chip with white text —
+       confirmed different from B2's orange, so they get their own classes
+       rather than being lumped into badge-4k like before. Applied to
+       In Clan / Last Clan / Rostered cells on the Rosters tab based on
+       keyword matching. */
     .badge { display:inline-block; padding:2px 7px; border-radius:5px; font-weight:600; color:#000; }
     .badge-tko { background:#d9ead3; }
     .badge-l2w { background:#c9daf8; }
     .badge-external { background:#efefef; }
     .badge-4k { background:#fce5cd; }
+    .badge-b10 { background:#e6cff2; }
+    .badge-b15 { background:#20585e; color:#fff; }
     .badge-partial { background:#f4cccc; }
   </style>
 </head>
@@ -195,7 +203,9 @@
       if (/L2W/i.test(v)) cls = 'badge-l2w';
       else if (/TKO/i.test(v)) cls = 'badge-tko';
       else if (/External/i.test(v)) cls = 'badge-external';
-      else if (/\b4k\b|B1\.0|B1\.5|\bB2\b/i.test(v)) cls = 'badge-4k';
+      else if (/B1\.5/i.test(v)) cls = 'badge-b15';
+      else if (/B1\.0/i.test(v)) cls = 'badge-b10';
+      else if (/\b4k\b|\bB2\b/i.test(v)) cls = 'badge-4k';
       else if (/Partial|Retired/i.test(v)) cls = 'badge-partial';
       if (!cls) return v;
       return '<span class="badge ' + cls + '">' + v + '</span>';
@@ -509,17 +519,17 @@
     // Battles.
     //
     // Backed by /api/rosters?group=..., which merges two sources server-side:
+    //  - The live sheet itself (lib/sheetRoster.js) is the SOURCE OF TRUTH
+    //    whenever it has a row for a player: In Clan, Last Clan, Total
+    //    5k/4k/3k, Elo, 5wa, this-week Score/Played, Player (Discord name),
+    //    Rostered, and Colosseum stats all come from here. The sheet already
+    //    bakes in day-corrections.json exclusions and any manual fixes, which
+    //    a fresh API pull doesn't know about — so its numbers win.
     //  - Live Royale API data (lookupOneClan/buildFamilyIndex in
-    //    lib/clanData.js) for everything that auto-updates during a war: In
-    //    Clan, Last Clan, Total 5k, Elo, 5wa, Score/Played, week history,
-    //    5kP/5kG/5kPPG. Same live path the Lookup tab already used — no Apps
-    //    Script involved, since Apps Script only runs bound to a Google
-    //    Sheet and can't run on the website.
-    //  - The live sheet itself (lib/sheetRoster.js), for the few columns
-    //    that are manually maintained with no Royale API source at all:
-    //    Player (Discord display name), Rostered, and Colosseum stats. So
-    //    editing those in the sheet shows up here too, without giving up the
-    //    live auto-updating for everything else.
+    //    lib/clanData.js) fills in week-by-week history and 5kP/5kG/5kPPG
+    //    (the sheet has no separate source for those), and is the fallback
+    //    for every field when a player isn't in the sheet at all yet (brand
+    //    new, not rostered). Same live path the Lookup tab already used.
     const ROSTER_GROUPS = {
       '5k':    { label: '5k Rosters' },
       '4k':    { label: '4k Rosters' },
@@ -633,7 +643,7 @@
           '<td>' + (r.discordName || '–') + '</td>' +
           '<td>' + statusBadge(r.rostered) + '</td>' +
           '<td>' + statusBadge(r.sheetInClan != null ? r.sheetInClan : r.inClan) + '</td>' +
-          '<td>' + statusBadge(r.clanName) + '</td>' +
+          '<td>' + statusBadge(r.sheetLastClan != null ? r.sheetLastClan : r.clanName) + '</td>' +
           '<td>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
           '<td>' + (r.elo == null ? '–' : r.elo) + '</td>' +
           '<td>' + (r.fivewa == null ? '–' : r.fivewa) + '</td>' +
@@ -671,7 +681,8 @@
       const rows = getFilteredSortedRows(key).map((r) => {
         const w = r.weeks || [];
         const row = [r.name, r.tag, r.discordName || '', r.rostered || '',
-          (r.sheetInClan != null ? r.sheetInClan : r.inClan), r.clanName || '',
+          (r.sheetInClan != null ? r.sheetInClan : r.inClan),
+          (r.sheetLastClan != null ? r.sheetLastClan : r.clanName) || '',
           r.total5k, r.elo, r.fivewa, r.thisWeekScore, r.thisWeekAttacks];
         for (let i = 0; i < 6; i++) {
           const wk = w[i];
