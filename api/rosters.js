@@ -2,12 +2,17 @@
 // Usage: /api/rosters?group=5k | 4k | bak3 | 35-40
 //
 // Powers the website's Rosters tab — the same 4 groupings as the Google
-// Sheets tabs (5k Rosters, 4k Rosters, Bak3, 3.5/4.0). Live war stats (In
-// Clan, Last Clan, Total 5k, Elo, 5wa, Score/Played, week history,
-// 5kP/5kG/5kPPG) come from the Royale API via lookupOneClan — same as the
-// Lookup tab. Player (Discord name), Rostered, and Colosseum stats have no
-// Royale API source at all, so those come from the live sheet via
-// lib/sheetRoster.js and are merged in here by Player Tag.
+// Sheets tabs (5k Rosters, 4k Rosters, Bak3, 3.5/4.0).
+//
+// The sheet (lib/sheetRoster.js) is the SOURCE OF TRUTH here: it already
+// bakes in day-corrections.json exclusions and any manual fixes made after
+// the fact, which a fresh Royale API pull can't know about. So for any
+// player the sheet has a row for, the sheet's In Clan, Last Clan, Total
+// 5k/4k/3k, Elo, 5wa, and this-week Score/Played all WIN over the live
+// Royale API numbers. The live API (lookupOneClan) only fills in: (a)
+// fields the sheet has no source for at all (week-by-week history,
+// 5kP/5kG/5kPPG), and (b) every field, as a fallback, for a player who
+// isn't in the sheet yet at all (brand new, not rostered).
 
 const { lookupOneClan, buildFamilyIndex } = require('../lib/clanData');
 const { fetchRosterOverlay } = require('../lib/sheetRoster');
@@ -31,9 +36,9 @@ module.exports = async function handler(req, res) {
     const [familyIndex, overlay] = await Promise.all([
       buildFamilyIndex(),
       fetchRosterOverlay(groupKey).catch((err) => {
-        // Sheet overlay is a nice-to-have on top of live API data — if the
-        // sheet is unreachable (sharing changed, network hiccup, etc.) still
-        // return the live stats rather than failing the whole request.
+        // Sheet overlay is the source of truth here — but if the sheet is
+        // unreachable (sharing changed, network hiccup, etc.) still return
+        // the live API stats rather than failing the whole request.
         console.error('Roster overlay fetch failed for ' + groupKey + ':', err.message);
         return {};
       })
@@ -50,15 +55,23 @@ module.exports = async function handler(req, res) {
       return Object.assign({}, r, {
         discordName: meta ? meta.player : null,
         rostered: meta ? meta.rostered : null,
+        // The sheet's own "In Clan"/"Last Clan" text (e.g. "1 TKO", "2 B2.0",
+        // "B2") — distinct from the live-computed `inClan`/`clanName` above,
+        // which stay as a fallback for players the sheet doesn't have yet.
+        sheetInClan: meta && meta.inClan != null ? meta.inClan : null,
+        sheetLastClan: meta && meta.lastClan != null ? meta.lastClan : null,
+        // Sheet wins for these whenever it has a value — see file header.
+        total5k: meta && meta.total != null ? meta.total : r.total5k,
+        elo: meta && meta.elo != null ? meta.elo : r.elo,
+        fivewa: meta && meta.fivewa != null ? meta.fivewa : r.fivewa,
+        thisWeekScore: meta && meta.score != null ? meta.score : r.thisWeekScore,
+        thisWeekAttacks: meta && meta.played != null ? meta.played : r.thisWeekAttacks,
         coloScore: meta ? meta.coloScore : null,
         coloBattles: meta ? meta.coloBattles : null
       });
     });
 
-    rows.sort((a, b) => {
-      if (a.inClan !== b.inClan) return a.inClan === 'Yes' ? -1 : 1;
-      return (b.total5k || 0) - (a.total5k || 0);
-    });
+    rows.sort((a, b) => (b.total5k || 0) - (a.total5k || 0));
 
     res.status(200).json({
       group: groupKey,
