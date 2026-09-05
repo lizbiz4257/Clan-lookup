@@ -8664,8 +8664,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1200,
-            "attacks": 8
+            "fame": 800,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -8797,8 +8797,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1150,
-            "attacks": 8
+            "fame": 650,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -9417,6 +9417,24 @@
             "attacks": 0
           },
           "name": "Paul 3.0"
+        },
+        "#9C0IJ89UC": {
+          "d1": {
+            "fame": 550,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
         }
       }
     }
@@ -22026,8 +22044,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1300,
-            "attacks": 8
+            "fame": 650,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -22136,12 +22154,12 @@
         },
         "#RC2298PV": {
           "d1": {
-            "fame": 600,
-            "attacks": 6
+            "fame": 400,
+            "attacks": 4
           },
           "d2": {
-            "fame": 300,
-            "attacks": 2
+            "fame": 500,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -22178,8 +22196,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1000,
-            "attacks": 5
+            "fame": 900,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -22406,8 +22424,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1500,
-            "attacks": 8
+            "fame": 800,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -22615,8 +22633,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1800,
-            "attacks": 8
+            "fame": 900,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -22691,8 +22709,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1400,
-            "attacks": 8
+            "fame": 800,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -22710,8 +22728,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1300,
-            "attacks": 8
+            "fame": 800,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -22858,12 +22876,12 @@
         },
         "#2Q9UJQ0UP": {
           "d1": {
-            "fame": 1250,
-            "attacks": 7
+            "fame": 800,
+            "attacks": 4
           },
           "d2": {
-            "fame": 300,
-            "attacks": 3
+            "fame": 550,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -22931,6 +22949,78 @@
             "attacks": 0
           },
           "name": "JB1"
+        },
+        "#P0RPVV9L": {
+          "d1": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#PJQUCU80P": {
+          "d1": {
+            "fame": 600,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 800,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#8L9V92YV": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
+        },
+        "#YLCY8YJC": {
+          "d1": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 500,
+            "attacks": 4
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
         }
       }
     }
@@ -30211,8 +30301,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1600,
-            "attacks": 8
+            "fame": 800,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -30397,12 +30487,12 @@
         },
         "#VYUP2UCP": {
           "d1": {
-            "fame": 800,
-            "attacks": 5
+            "fame": 700,
+            "attacks": 4
           },
           "d2": {
-            "fame": 1100,
-            "attacks": 7
+            "fame": 400,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -30625,12 +30715,12 @@
         },
         "#PPCUJJCUP": {
           "d1": {
-            "fame": 800,
-            "attacks": 5
+            "fame": 600,
+            "attacks": 4
           },
           "d2": {
-            "fame": 450,
-            "attacks": 3
+            "fame": 650,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -30648,8 +30738,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 800,
-            "attacks": 5
+            "fame": 700,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -30686,8 +30776,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1450,
-            "attacks": 8
+            "fame": 900,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -30819,8 +30909,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 500,
-            "attacks": 5
+            "fame": 400,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -30872,12 +30962,12 @@
         },
         "#GPRQCJQ": {
           "d1": {
-            "fame": 1150,
-            "attacks": 7
+            "fame": 700,
+            "attacks": 4
           },
           "d2": {
-            "fame": 200,
-            "attacks": 1
+            "fame": 650,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -30907,6 +30997,24 @@
             "attacks": 0
           },
           "name": "david srb"
+        },
+        "#VP09CLVVJ": {
+          "d1": {
+            "fame": 700,
+            "attacks": 4
+          },
+          "d2": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d3": {
+            "fame": 0,
+            "attacks": 0
+          },
+          "d4": {
+            "fame": 0,
+            "attacks": 0
+          }
         }
       }
     }
@@ -34690,8 +34798,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1000,
-            "attacks": 8
+            "fame": 400,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -34956,8 +35064,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1300,
-            "attacks": 8
+            "fame": 500,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -35051,8 +35159,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1000,
-            "attacks": 7
+            "fame": 550,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -35127,8 +35235,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1200,
-            "attacks": 8
+            "fame": 700,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -35317,8 +35425,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 1600,
-            "attacks": 8
+            "fame": 700,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -35374,8 +35482,8 @@
             "attacks": 4
           },
           "d2": {
-            "fame": 500,
-            "attacks": 4
+            "fame": 300,
+            "attacks": 3
           },
           "d3": {
             "fame": 0,
@@ -35408,12 +35516,12 @@
         },
         "#2YUPU0JUV": {
           "d1": {
-            "fame": 1000,
-            "attacks": 5
+            "fame": 900,
+            "attacks": 4
           },
           "d2": {
-            "fame": 1000,
-            "attacks": 7
+            "fame": 550,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -35465,12 +35573,12 @@
         },
         "#2GY2UV2P2": {
           "d1": {
-            "fame": 1250,
-            "attacks": 7
+            "fame": 800,
+            "attacks": 4
           },
           "d2": {
-            "fame": 200,
-            "attacks": 1
+            "fame": 650,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -38424,12 +38532,12 @@
         },
         "#2JC29UGRQ": {
           "d1": {
-            "fame": 400,
-            "attacks": 4
+            "fame": 300,
+            "attacks": 3
           },
           "d2": {
-            "fame": 550,
-            "attacks": 4
+            "fame": 650,
+            "attacks": 5
           },
           "d3": {
             "fame": 0,
@@ -39222,12 +39330,12 @@
         },
         "#YLVQLGUQ0": {
           "d1": {
-            "fame": 1400,
-            "attacks": 7
+            "fame": 800,
+            "attacks": 4
           },
           "d2": {
-            "fame": 100,
-            "attacks": 1
+            "fame": 700,
+            "attacks": 4
           },
           "d3": {
             "fame": 0,
@@ -39425,7 +39533,7 @@
       "name": "Flapmuts",
       "fame": 1300,
       "attacks": 8,
-      "note": "exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
+      "note": "RESOLVED 2026-09-05 (round 2): manually corrected using CWStats.com real per-day data. exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
     },
     {
       "capturedAt": "2026-09-05",
@@ -39436,7 +39544,7 @@
       "name": "\uff33\uff2c\uff29\uff2d\uff21\uff2e\uff25\u2728",
       "fame": 1500,
       "attacks": 8,
-      "note": "exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
+      "note": "RESOLVED 2026-09-05 (round 2): manually corrected using CWStats.com real per-day data. exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
     },
     {
       "capturedAt": "2026-09-05",
@@ -39447,7 +39555,7 @@
       "name": "Zones",
       "fame": 1400,
       "attacks": 8,
-      "note": "exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
+      "note": "RESOLVED 2026-09-05 (round 2): manually corrected using CWStats.com real per-day data. exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
     },
     {
       "capturedAt": "2026-09-05",
@@ -39469,7 +39577,7 @@
       "name": "Noppiraptor",
       "fame": 1800,
       "attacks": 8,
-      "note": "exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
+      "note": "RESOLVED 2026-09-05 (round 2): manually corrected using CWStats.com real per-day data. exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
     },
     {
       "capturedAt": "2026-09-05",
@@ -39480,7 +39588,7 @@
       "name": "JJay",
       "fame": 500,
       "attacks": 5,
-      "note": "exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
+      "note": "RESOLVED 2026-09-05 (round 2): manually corrected using CWStats.com real per-day data. exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
     },
     {
       "capturedAt": "2026-09-05",
@@ -39491,7 +39599,7 @@
       "name": "DC Mike",
       "fame": 800,
       "attacks": 5,
-      "note": "exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
+      "note": "RESOLVED 2026-09-05 (round 2): manually corrected using CWStats.com real per-day data. exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
     },
     {
       "capturedAt": "2026-09-05",
@@ -39502,7 +39610,7 @@
       "name": "cesifureu",
       "fame": 1100,
       "attacks": 7,
-      "note": "exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
+      "note": "RESOLVED 2026-09-05 (round 2): manually corrected using CWStats.com real per-day data. exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
     },
     {
       "capturedAt": "2026-09-05",
@@ -39513,7 +39621,7 @@
       "name": "\u305b Pazixks \u305b",
       "fame": 1600,
       "attacks": 8,
-      "note": "exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
+      "note": "RESOLVED 2026-09-05 (round 2): manually corrected using CWStats.com real per-day data. exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
     },
     {
       "capturedAt": "2026-09-05",
@@ -39524,7 +39632,7 @@
       "name": "HappYMiL",
       "fame": 1450,
       "attacks": 8,
-      "note": "exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
+      "note": "RESOLVED 2026-09-05 (round 2): manually corrected using CWStats.com real per-day data. exceeds 4 decks in one war day \u2014 baseline was likely stale; this day probably has a prior missed day's fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number."
     }
   ]
 }
