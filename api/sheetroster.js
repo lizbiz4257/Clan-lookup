@@ -1,16 +1,14 @@
 // lib/sheetRoster.js
 //
-// Overlays the live "Project Shithouse" roster sheet onto the website's
-// Rosters tab. The sheet is the SOURCE OF TRUTH for Total 5k/4k/3k, Elo,
-// 5wa, this-week Score/Played, In Clan and Last Clan — it already bakes in
-// day-corrections.json exclusions and any manual fixes the Apps Script or a
-// human made after the fact, which a fresh Royale API pull (lookupOneClan)
-// does NOT know about. So this file's values WIN over the live API's for
-// any player it has a row for; the live API is only the fallback for a
-// player who isn't in the sheet at all yet (brand new, not rostered yet).
-//
-// Player (Discord display name), Rostered, and Colosseum stats have no
-// Royale API source at all, so those always come from here regardless.
+// Reads the live "Project Shithouse" roster sheet for the website's Rosters
+// tab. The sheet is the SOURCE OF TRUTH here — not just an overlay: every
+// row on the sheet (mains AND alts) becomes a row on the website, because
+// the sheet already bakes in day-corrections.json exclusions and any manual
+// fixes made after the fact, which a fresh Royale API pull (lookupOneClan)
+// doesn't know about. api/rosters.js drives its row list off this file's
+// output, then enriches each row with live API data (week history,
+// 5kP/5kG/5kPPG) by matching Player Tag, and separately appends any live
+// clan member who isn't in the sheet at all yet (brand new, not added).
 //
 // Requires the sheet's General access to be "Anyone with the link – Viewer"
 // (set 2026-09-05) — Google Sheets sharing is whole-file, so this exposes
@@ -36,9 +34,9 @@ const TOTAL_COL_BY_GROUP = {
   '35-40': 'Total 5k'
 };
 
-// Overlay data only changes when someone manually edits the sheet, so a
-// short cache avoids re-fetching Google Sheets on every single page view.
-const cache = new Map(); // gid -> { time, overlay }
+// Sheet data only changes when someone manually edits it, so a short cache
+// avoids re-fetching Google Sheets on every single page view.
+const cache = new Map(); // gid -> { time, rows }
 const CACHE_TTL_MS = 60 * 1000;
 
 // Minimal CSV parser for Google Sheets' own CSV export (handles quoted
@@ -95,27 +93,30 @@ function toNumberOrNull(raw) {
   return isNaN(n) ? null : n;
 }
 
-// Returns { [playerTag]: { player, rostered, inClan, lastClan, total,
-// elo, fivewa, score, played, coloScore, coloBattles } } for one roster tab.
-// Tabs that don't have a given column (e.g. Bak3 and 3.5/4.0 have no Colo
-// Score/Colo Battles columns; 3.5/4.0 has no dedicated In Clan column) just
-// get null for that field.
-async function fetchRosterOverlay(groupKey) {
+// Returns EVERY row on one roster tab (mains and alts alike) as an array:
+// [{ tag, account, player, alt, rostered, inClan, lastClan, total, elo,
+//    fivewa, score, played, coloScore, coloBattles }, ...]
+// in the same order they appear on the sheet. Tabs that don't have a given
+// column (e.g. Bak3 and 3.5/4.0 have no Colo Score/Colo Battles columns;
+// 3.5/4.0 has no dedicated In Clan column) just get null for that field.
+async function fetchRosterSheet(groupKey) {
   const gid = TAB_GIDS[groupKey];
   if (!gid) throw new Error('Unknown roster group: ' + groupKey);
 
   const cached = cache.get(gid);
-  if (cached && Date.now() - cached.time < CACHE_TTL_MS) return cached.overlay;
+  if (cached && Date.now() - cached.time < CACHE_TTL_MS) return cached.rows;
 
   const csvText = await fetchTabCsv(gid);
-  const rows = parseCsv(csvText);
-  const header = rows[0] || [];
+  const parsed = parseCsv(csvText);
+  const header = parsed[0] || [];
   const col = (name) => header.indexOf(name);
   const totalColName = TOTAL_COL_BY_GROUP[groupKey] || 'Total 5k';
 
   const idx = {
+    account: col('Account'),
     tag: col('Player Tag'),
     player: col('Player'),
+    alt: col('Alt'),
     rostered: col('Rostered'),
     inClan: col('In Clan'),
     lastClan: col('Last Clan') >= 0 ? col('Last Clan') : col('Clan'), // 3.5/4.0 uses "Clan" instead
@@ -128,14 +129,17 @@ async function fetchRosterOverlay(groupKey) {
     coloBattles: col('Colo Battles')
   };
 
-  const overlay = {};
-  for (let r = 1; r < rows.length; r++) {
-    const row = rows[r];
+  const rows = [];
+  for (let r = 1; r < parsed.length; r++) {
+    const row = parsed[r];
     const tag = idx.tag >= 0 ? String(row[idx.tag] || '').trim().toUpperCase() : '';
     if (!tag || tag.charAt(0) !== '#') continue; // skip blank/summary/header-ish rows
 
-    overlay[tag] = {
+    rows.push({
+      tag: tag,
+      account: idx.account >= 0 ? (String(row[idx.account] || '').trim() || null) : null,
       player: idx.player >= 0 ? (String(row[idx.player] || '').trim() || null) : null,
+      alt: idx.alt >= 0 ? (String(row[idx.alt] || '').trim() || null) : null,
       rostered: idx.rostered >= 0 ? (String(row[idx.rostered] || '').trim() || null) : null,
       inClan: idx.inClan >= 0 ? (String(row[idx.inClan] || '').trim() || null) : null,
       lastClan: idx.lastClan >= 0 ? (String(row[idx.lastClan] || '').trim() || null) : null,
@@ -146,11 +150,11 @@ async function fetchRosterOverlay(groupKey) {
       played: toNumberOrNull(idx.played >= 0 ? row[idx.played] : null),
       coloScore: toNumberOrNull(idx.coloScore >= 0 ? row[idx.coloScore] : null),
       coloBattles: toNumberOrNull(idx.coloBattles >= 0 ? row[idx.coloBattles] : null)
-    };
+    });
   }
 
-  cache.set(gid, { time: Date.now(), overlay });
-  return overlay;
+  cache.set(gid, { time: Date.now(), rows });
+  return rows;
 }
 
-module.exports = { fetchRosterOverlay, TAB_GIDS, SPREADSHEET_ID };
+module.exports = { fetchRosterSheet, TAB_GIDS, SPREADSHEET_ID };
