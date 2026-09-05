@@ -87,6 +87,16 @@
     .fieldlabel { font-size: 12px; color: var(--muted); font-weight: 600; margin: 0 0 4px; }
     td.num, th.num { text-align: right; }
     .threecol { font-weight: 700; color: var(--accent-dark); }
+    /* Roster status badges — colors match the "Key" legend on the JB Dashboard
+       sheet tab (Teal=L2W Week, Orange=TKO week, Grey=External wk,
+       Green=4k week, Red=Partial). Applied to In Clan / Last Clan cells on
+       the Rosters tab based on keyword matching against that same legend. */
+    .badge { display:inline-block; padding:2px 7px; border-radius:5px; font-weight:600; }
+    .badge-l2w { background:#4fc3c3; color:#04302f; }
+    .badge-tko { background:#f6c592; color:#5a3200; }
+    .badge-external { background:#d9d9d9; color:#333; }
+    .badge-4k { background:#b6d7a8; color:#1e4620; }
+    .badge-partial { background:#e06666; color:#fff; }
   </style>
 </head>
 <body>
@@ -141,6 +151,10 @@
         <button id="rgbtn-35-40" class="tab" onclick="showRosterGroup('35-40')">3.5/4.0</button>
       </div>
       <div id="rostersStatus" style="font-size:13px; margin: -8px 0 12px; min-height:16px;"></div>
+      <div id="rostersFilterBar" style="display:none; margin:-4px 0 12px;">
+        <p class="fieldlabel">Filter by clan</p>
+        <select id="rosterClanFilter" onchange="renderRosterTable(currentRosterGroup)"></select>
+      </div>
       <div id="rostersResults"></div>
     </div>
   </div>
@@ -166,6 +180,23 @@
     function playerLink(r) {
       const cleanTag = (r.tag || '').replace('#', '');
       return '<a href="https://royaleapi.com/player/' + cleanTag + '" target="_blank" style="color:var(--accent); text-decoration:none;">' + r.name + '</a>';
+    }
+
+    // Wraps a roster status value (In Clan / Last Clan text like "1 TKO",
+    // "5 L2W", "External", "4k") in a colored badge matching the sheet's own
+    // Key legend. Falls back to plain text if the value doesn't match any
+    // known keyword.
+    function statusBadge(value) {
+      if (!value || value === '–') return value || '–';
+      const v = String(value);
+      let cls = null;
+      if (/L2W/i.test(v)) cls = 'badge-l2w';
+      else if (/TKO/i.test(v)) cls = 'badge-tko';
+      else if (/External/i.test(v)) cls = 'badge-external';
+      else if (/\b4k\b|B1\.0|B1\.5|\bB2\b/i.test(v)) cls = 'badge-4k';
+      else if (/Partial|Retired/i.test(v)) cls = 'badge-partial';
+      if (!cls) return v;
+      return '<span class="badge ' + cls + '">' + v + '</span>';
     }
 
     async function lookupClan() {
@@ -494,6 +525,7 @@
       '35-40': { label: '3.5/4.0' }
     };
     const rosterDataCache = {}; // group key -> last fetched data (avoids re-fetching on tab switch)
+    const rosterFilterSelection = {}; // group key -> selected clan name, or 'all'
     let currentRosterGroup = null;
 
     function showRosterGroup(key) {
@@ -529,10 +561,48 @@
       }
     }
 
+    // Figures out which clan is currently selected for this group (syncing
+    // with rosterFilterSelection), rebuilds the filter dropdown's options to
+    // match the clans actually present in this group's data, then returns
+    // the rows filtered to that clan (or all rows) and sorted BY CLAN first,
+    // then by 5wa highest to lowest within each clan.
+    function getFilteredSortedRows(key) {
+      const data = rosterDataCache[key];
+      if (!data) return [];
+      const selectEl = document.getElementById('rosterClanFilter');
+      const filterBar = document.getElementById('rostersFilterBar');
+      const distinctClans = Array.from(new Set(data.rows.map((r) => r.clanName).filter(Boolean))).sort();
+
+      let selected;
+      if (selectEl.dataset.group === key) {
+        selected = selectEl.value; // dropdown already reflects this group (e.g. user just changed it)
+      } else {
+        selected = rosterFilterSelection[key] || 'all';
+      }
+      if (selected !== 'all' && distinctClans.indexOf(selected) === -1) selected = 'all';
+      rosterFilterSelection[key] = selected;
+
+      selectEl.dataset.group = key;
+      selectEl.innerHTML = '<option value="all">All clans</option>' +
+        distinctClans.map((c) => '<option value="' + c.replace(/"/g, '&quot;') + '"' + (c === selected ? ' selected' : '') + '>' + c + '</option>').join('');
+      selectEl.value = selected;
+      filterBar.style.display = distinctClans.length > 1 ? '' : 'none';
+
+      const filtered = selected === 'all' ? data.rows.slice() : data.rows.filter((r) => r.clanName === selected);
+      filtered.sort((a, b) => {
+        const ac = a.clanName || '';
+        const bc = b.clanName || '';
+        if (ac !== bc) return ac.localeCompare(bc);
+        return (b.fivewa == null ? -Infinity : b.fivewa) - (a.fivewa == null ? -Infinity : a.fivewa);
+      });
+      return filtered;
+    }
+
     function renderRosterTable(key) {
       const data = rosterDataCache[key];
       const results = document.getElementById('rostersResults');
       if (!data) return;
+      const rows = getFilteredSortedRows(key);
       const labels = (data.clans && data.clans[0] && data.clans[0].weekLabels) || [];
       const wkHeader = (i) => labels[i] || ('Wk' + (i + 1));
       let html = '<div class="card"><div style="overflow-x:auto;"><table>';
@@ -548,15 +618,15 @@
         '<th>' + wkHeader(5) + ' Score</th><th>' + wkHeader(5) + ' Played</th>' +
         '<th>5kP</th><th>5kG</th><th>5kPPG</th><th>Colo Score</th><th>Colo Battles</th></tr>';
 
-      data.rows.forEach((r) => {
+      rows.forEach((r) => {
         const w = r.weeks || [];
         html += '<tr>' +
           '<td>' + playerLink(r) + '</td>' +
           '<td>' + r.tag + '</td>' +
           '<td>' + (r.discordName || '–') + '</td>' +
-          '<td>' + (r.rostered || '–') + '</td>' +
-          '<td>' + r.inClan + '</td>' +
-          '<td>' + (r.clanName || '–') + '</td>' +
+          '<td>' + statusBadge(r.rostered) + '</td>' +
+          '<td>' + statusBadge(r.sheetInClan != null ? r.sheetInClan : r.inClan) + '</td>' +
+          '<td>' + statusBadge(r.clanName) + '</td>' +
           '<td>' + (r.total5k == null ? '–' : r.total5k) + '</td>' +
           '<td>' + (r.elo == null ? '–' : r.elo) + '</td>' +
           '<td>' + (r.fivewa == null ? '–' : r.fivewa) + '</td>' +
@@ -591,9 +661,10 @@
         'Week 3 Score', 'Week 3 Played', 'Week 4 Score', 'Week 4 Played',
         'Week 5 Score', 'Week 5 Played', 'Week 6 Score', 'Week 6 Played',
         '5kP', '5kG', '5kPPG', 'Colo Score', 'Colo Battles'];
-      const rows = data.rows.map((r) => {
+      const rows = getFilteredSortedRows(key).map((r) => {
         const w = r.weeks || [];
-        const row = [r.name, r.tag, r.discordName || '', r.rostered || '', r.inClan, r.clanName || '',
+        const row = [r.name, r.tag, r.discordName || '', r.rostered || '',
+          (r.sheetInClan != null ? r.sheetInClan : r.inClan), r.clanName || '',
           r.total5k, r.elo, r.fivewa, r.thisWeekScore, r.thisWeekAttacks];
         for (let i = 0; i < 6; i++) {
           const wk = w[i];
