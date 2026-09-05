@@ -200,6 +200,19 @@
     // "5 L2W", "External", "4k") in a colored badge matching the sheet's own
     // Key legend. Falls back to plain text if the value doesn't match any
     // known keyword.
+    // Matches any "!Baked! N.N" / "Baked N.N" / bare "BN.N" reference to a
+    // Baked-family clan and pulls out its number. This text shows up two
+    // ways: the sheet's own Last Clan text (usually already short, e.g.
+    // "B1.0"), OR — when a row has no sheet match at all and falls back to
+    // the live Royale API's clan name (see api/rosters.js) — the clan's
+    // real, spelled-out in-game name, e.g. "!Baked! 4.0". Either way we
+    // want the short form on the badge.
+    function extractBakedNumber(v) {
+      let m = v.match(/!?Baked!?\s*(\d+(?:\.\d+)?)/i);
+      if (!m) m = v.match(/\bB(\d+(?:\.\d+)?)\b/i);
+      return m ? { raw: m[0], num: parseFloat(m[1]) } : null;
+    }
+
     function statusBadge(value) {
       if (!value || value === '–') return value || '–';
       let v = String(value);
@@ -213,16 +226,25 @@
         v = v.replace(/Team\s*Knock\w*/i, 'TKO');
       }
       else if (/External/i.test(v)) cls = 'badge-external';
-      else if (/B1\.5/i.test(v)) cls = 'badge-b15';
-      else if (/B1\.0/i.test(v)) cls = 'badge-b10';
-      else if (/\b4k\b|\bB2\b/i.test(v)) cls = 'badge-4k';
-      else if (/!?Baked!?\s*2\.?0/i.test(v)) {
-        cls = 'badge-4k';
-        // Same normalization as Team Knockouts -> TKO: show "B2" on the
-        // badge, not the sheet's spelled-out "Baked 2.0"/"!Baked! 2.0".
-        v = v.replace(/!?Baked!?\s*2\.?0/i, 'B2');
+      else if (/\b4k\b/i.test(v)) cls = 'badge-4k';
+      else {
+        const baked = extractBakedNumber(v);
+        if (baked) {
+          // Confirmed badge colors (pixel-sampled from the sheet) exist
+          // only for 1.0/1.5/2.0 so far. Any other Baked variant (2.5,
+          // 3.0, 3.5, 4.0, ...) still gets shortened to "BN.N" so it's
+          // readable, just without a color guess — ask to get those
+          // pixel-sampled too if they should be colored.
+          if (baked.num === 1.5) { cls = 'badge-b15'; v = v.replace(baked.raw, 'B1.5'); }
+          else if (baked.num === 1.0) { cls = 'badge-b10'; v = v.replace(baked.raw, 'B1.0'); }
+          else if (baked.num === 2.0) { cls = 'badge-4k'; v = v.replace(baked.raw, 'B2'); }
+          else {
+            const short = Number.isInteger(baked.num) ? baked.num + '.0' : String(baked.num);
+            v = v.replace(baked.raw, 'B' + short);
+          }
+        }
       }
-      else if (/Partial|Retired/i.test(v)) cls = 'badge-partial';
+      if (cls === null && /Partial|Retired/i.test(v)) cls = 'badge-partial';
       if (!cls) return v;
       return '<span class="badge ' + cls + '">' + v + '</span>';
     }
