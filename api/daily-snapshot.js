@@ -1,4 +1,18 @@
 // api/daily-snapshot.js
+//
+// UPDATED 2026-09-05: fixed the "impossible score" / stacked-day bug (a
+// player occasionally drops out of the Royale API's `participants` list for
+// one capture morning, so their baseline doesn't advance that day; the next
+// capture then dumped 2+ days of fame/attacks onto a single day, e.g. "8
+// decks used Sunday"). Now tracks which day each player's baseline was last
+// updated (`meta.baseline[tag].atDayKey`) and, when a gap is detected, splits
+// the combined value evenly across the real missed day(s) instead of piling
+// it all onto one day. Still flags every case in `data._flags` for a
+// spot-check — it's a much better estimate than before, not a guarantee.
+// This only affects captures going forward; weeks already corrupted before
+// this fix need a separate manual pass (see the project's
+// daily-scores-stacking-audit-2026-09-05.md for the list of affected rows).
+//
 // Runs automatically once a day (see vercel.json, 5:30pm Eastern, Thu-Sun).
 // Captures each tracked clan's players' cumulative war fame, diffs it against
 // yesterday's stored total to get "today's" contribution, and writes it
@@ -273,6 +287,7 @@ module.exports = async function handler(req, res) {
 
         if (!data[tag][targetWeek]) data[tag][targetWeek] = { players: {} };
         let flaggedThisRun = 0;
+        let autoSplitThisRun = 0;
         participants.forEach((p) => {
           // Both fame and decksUsed from the API are CUMULATIVE for the week, so
           // today's contribution is the difference from yesterday's stored total
@@ -283,39 +298,87 @@ module.exports = async function handler(req, res) {
           const todayFame    = p.fame - prevFame;
           const todayAttacks = p.decksUsed - prevDecks;
 
-          // SANITY GUARD: a single war day allows at most 4 deck uses. If the
-          // diff exceeds that, `meta.baseline[p.tag]` was stale going into this
-          // capture (a prior day's run failed/was skipped for this player, or
-          // they were briefly missing from `participants`), so this delta is
-          // actually TWO OR MORE days of fame/attacks stacked into one — the
-          // exact "impossible score" bug confirmed in week 135-3 (e.g. a player
-          // showing 8 decks / ~1500 fame on a single day). We still WRITE the
-          // value (dropping it silently would lose real data) and still advance
-          // the baseline below (skipping that would only compound the error
-          // into the NEXT day too) — but we flag it loudly in both the response
-          // message and a persisted `_flags` list so it's caught the same
-          // morning instead of sitting wrong in the sheet for a week. Flagged
-          // rows need a manual spot-check against RoyaleAPI/CW2 Stats to split
-          // correctly — see day-corrections.json's `_flags` array.
-          if (todayAttacks > 4) {
-            flaggedThisRun++;
-            if (!data._flags) data._flags = [];
-            data._flags.push({
-              capturedAt: easternDate, clan: tag, week: targetWeek, day: dayKey,
-              tag: p.tag, name: p.name, fame: todayFame, attacks: todayAttacks,
-              note: 'exceeds 4 decks in one war day — baseline was likely stale; this day probably has a prior missed day\'s fame/attacks stacked in. Spot-check against RoyaleAPI before trusting this number.'
-            });
-          }
-
           if (!data[tag][targetWeek].players[p.tag]) {
             data[tag][targetWeek].players[p.tag] = {
               d1: { fame: 0, attacks: 0 }, d2: { fame: 0, attacks: 0 },
               d3: { fame: 0, attacks: 0 }, d4: { fame: 0, attacks: 0 }
             };
           }
-          data[tag][targetWeek].players[p.tag].name = p.name; // for the Daily Scores display; the sheet ignores this field
-          data[tag][targetWeek].players[p.tag][dayKey] = { fame: todayFame, attacks: todayAttacks };
-          meta.baseline[p.tag] = { fame: p.fame, decks: p.decksUsed };
+          const playerRow = data[tag][targetWeek].players[p.tag];
+          playerRow.name = p.name; // for the Daily Scores display; the sheet ignores this field
+
+          // FIX (2026-09-05): a single war day allows at most 4 deck uses. If the
+          // diff exceeds that, `meta.baseline[p.tag]` was stale going into this
+          // capture — this player was briefly missing from `currentriverrace`'s
+          // `participants` list on a prior capture morning (a known Royale API
+          // quirk, not a code bug we can prevent), so their baseline never
+          // advanced that day. The diff we just computed is actually TWO OR MORE
+          // real war days of fame/attacks stacked together — this is the
+          // "impossible score" bug (first confirmed week 135-3, e.g. 8 decks /
+          // ~1500 fame shown on one day).
+          //
+          // OLD behavior: dumped the whole combined value onto today's dayKey
+          // and just flagged it — so e.g. an 8-deck combined value showed as
+          // "8 attacks on Sunday" instead of the real "4 on Saturday, 4 on
+          // Sunday". That's what was producing the wrong daily numbers.
+          //
+          // NEW behavior: `prev.atDayKey` (added below, alongside fame/decks)
+          // records which war day the baseline was last updated for. If that's
+          // not exactly "yesterday" relative to today's `dayKey`, we know how
+          // many real days (daysSpanned) are stacked in this diff, and which
+          // day slots are the missed ones (they're still sitting at the
+          // {fame:0, attacks:0} default since they were never captured). We
+          // split the combined fame/attacks EVENLY across those real days and
+          // write each into its correct slot, instead of dumping everything on
+          // today. This is still an estimate (we can't know the true per-day
+          // split after the fact) — so it's flagged for a spot-check too — but
+          // it's a far better estimate than crediting one day with another
+          // day's attacks, and it fixes which DAY the number lands on.
+          const prevDayNum = (prev && typeof prev === 'object' && prev.atDayKey)
+            ? Number(prev.atDayKey.slice(1)) : null;
+          const daysSpanned = (prevDayNum != null) ? (warDay - prevDayNum) : 1;
+
+          if (todayAttacks > 4 && prevDayNum != null && daysSpanned > 1 && daysSpanned <= 4) {
+            // Split evenly across the real days from (prevDayNum+1) through
+            // warDay (inclusive) — all of which should currently be blank.
+            const baseAttacks = Math.floor(todayAttacks / daysSpanned);
+            const baseFame    = Math.floor(todayFame / daysSpanned);
+            let remAttacks = todayAttacks - baseAttacks * daysSpanned;
+            let remFame    = todayFame - baseFame * daysSpanned;
+            for (let d = prevDayNum + 1; d <= warDay; d++) {
+              const dk = 'd' + d;
+              // Give any remainder to the LAST (most recent/today's) day —
+              // arbitrary, but has to go somewhere.
+              const extraA = (d === warDay) ? remAttacks : 0;
+              const extraF = (d === warDay) ? remFame : 0;
+              playerRow[dk] = { fame: baseFame + extraF, attacks: baseAttacks + extraA };
+            }
+            autoSplitThisRun++;
+            if (!data._flags) data._flags = [];
+            data._flags.push({
+              capturedAt: easternDate, clan: tag, week: targetWeek, day: dayKey,
+              tag: p.tag, name: p.name, fame: todayFame, attacks: todayAttacks,
+              note: 'AUTO-SPLIT: baseline was stale (last updated ' + prev.atDayKey + ', ' + daysSpanned +
+                ' day(s) before ' + dayKey + '). Combined value evenly split across d' + (prevDayNum + 1) +
+                '-' + dayKey + '. This is an estimate — spot-check against RoyaleAPI if it looks off.'
+            });
+          } else {
+            // No detectable gap (or gap too large to trust an even split, or no
+            // prior baseline at all — e.g. first day of the week) — write the
+            // value as-is, same as before.
+            playerRow[dayKey] = { fame: todayFame, attacks: todayAttacks };
+            if (todayAttacks > 4) {
+              flaggedThisRun++;
+              if (!data._flags) data._flags = [];
+              data._flags.push({
+                capturedAt: easternDate, clan: tag, week: targetWeek, day: dayKey,
+                tag: p.tag, name: p.name, fame: todayFame, attacks: todayAttacks,
+                note: 'exceeds 4 decks in one war day and could not be auto-split (no reliable prior-day marker) — spot-check against RoyaleAPI/CW2 Stats before trusting this number.'
+              });
+            }
+          }
+
+          meta.baseline[p.tag] = { fame: p.fame, decks: p.decksUsed, atDayKey: dayKey };
         });
 
         // Keep _flags from growing forever — same idea as the per-clan week
@@ -326,7 +389,8 @@ module.exports = async function handler(req, res) {
 
         meta.lastCaptureDate = easternDate; // mark this clan done for today
         results.push(tag + ': captured ' + targetWeek + ' ' + dayKey + ' for ' + participants.length + ' players' +
-          (flaggedThisRun ? ' — ⚠️ ' + flaggedThisRun + ' FLAGGED as impossible (>4 decks/day), check _flags in day-corrections.json' : ''));
+          (autoSplitThisRun ? ' — 🔧 ' + autoSplitThisRun + ' auto-split across missed day(s), check _flags in day-corrections.json' : '') +
+          (flaggedThisRun ? ' — ⚠️ ' + flaggedThisRun + ' FLAGGED as impossible (>4 decks/day, could not auto-split), check _flags' : ''));
       } catch (err) {
         results.push(tag + ': FAILED — ' + err.message);
       }
