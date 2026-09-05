@@ -202,10 +202,16 @@
     // known keyword.
     function statusBadge(value) {
       if (!value || value === '–') return value || '–';
-      const v = String(value);
+      let v = String(value);
       let cls = null;
       if (/L2W/i.test(v)) cls = 'badge-l2w';
-      else if (/TKO/i.test(v) || /Team\s*Knock/i.test(v)) cls = 'badge-tko';
+      else if (/TKO/i.test(v) || /Team\s*Knock/i.test(v)) {
+        cls = 'badge-tko';
+        // Show "TKO" on the badge itself, not the sheet's spelled-out
+        // "Team Knockouts" — keeps any prefix/suffix text (e.g. a leading
+        // count) intact, just swaps the clan name part.
+        v = v.replace(/Team\s*Knock\w*/i, 'TKO');
+      }
       else if (/External/i.test(v)) cls = 'badge-external';
       else if (/B1\.5/i.test(v)) cls = 'badge-b15';
       else if (/B1\.0/i.test(v)) cls = 'badge-b10';
